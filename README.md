@@ -17,4 +17,6 @@ Known architectural limits are package-global registers, marks, macros, search s
 
 Run the complete noninteractive suite with `npm run check`. Individual commands are `npm run lint`, `npm run typecheck`, `npm test`, `npm run test:browser`, and `npm run build`. To inspect the exact production artifact, run `npm run build`, then `npm run preview`, and open the printed URL.
 
+GitHub Actions runs the complete verification suite for pushes and pull requests. Pushes to `main` also trigger the Pages workflow, which verifies the project, builds it with the repository-derived base path, uploads `dist`, and deploys through the `github-pages` environment. For a repository named `vim-xp`, the deployed hash route is `https://<owner>.github.io/vim-xp/#/lab`; local development and preview continue to use `/` unless `VITE_BASE_PATH` is explicitly set.
+
 See [local development](docs/local-development.md), [architecture](docs/architecture.md), [engine evidence](docs/engine-evaluation.md), and [deployment](docs/deployment.md).
