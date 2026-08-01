@@ -14,6 +14,7 @@ export class VimEditorAdapter {
   private listeners = new Set<(state: EditorSnapshot) => void>()
   private trace: string[] = []
   private readonly keyListener: (event: KeyboardEvent) => void
+  private readonly modeListener = () => this.emit()
 
   constructor(parent: HTMLElement, initial: EditorInitialState) {
     // The package stores registers, macros, search, and marks outside EditorView.
@@ -25,6 +26,7 @@ export class VimEditorAdapter {
         EditorView.updateListener.of((update) => { if (update.docChanged || update.selectionSet) this.emit() })] }) })
     this.keyListener = (event) => { const token = normalizeKeyboardEvent(event); if (token) { this.trace.push(token); queueMicrotask(() => this.emit()) } }
     this.view.contentDOM.addEventListener('keydown', this.keyListener, true)
+    getCM(this.view)?.on('vim-mode-change', this.modeListener)
   }
 
   focus() { this.view.focus() }
@@ -39,12 +41,13 @@ export class VimEditorAdapter {
     const cm = getCM(this.view)
     if (!cm) throw new Error('CodeMirror Vim compatibility adapter is unavailable')
     for (const token of tokens.flatMap(expandReplayToken)) {
-      Vim.handleKey(cm, token, 'replay')
+      const handled = Vim.handleKey(cm, token, 'replay')
+      if (!handled && cm.state.vim?.insertMode && token.length === 1) cm.replaceSelection(token)
       this.trace.push(token)
       this.emit()
       if (stepDelay) await new Promise((resolve) => setTimeout(resolve, stepDelay))
     }
   }
-  destroy() { this.view.contentDOM.removeEventListener('keydown', this.keyListener, true); this.listeners.clear(); this.view.destroy() }
+  destroy() { this.view.contentDOM.removeEventListener('keydown', this.keyListener, true); getCM(this.view)?.off('vim-mode-change', this.modeListener); this.listeners.clear(); this.view.destroy() }
   private emit() { const state = this.snapshot(); this.listeners.forEach((listener) => listener(state)) }
 }

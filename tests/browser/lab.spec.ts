@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 const editor = (page: import('@playwright/test').Page) => page.locator('.cm-content')
 const documentText = (page: import('@playwright/test').Page) => editor(page).locator('.cm-line').allTextContents().then((lines) => `${lines.join('\n')}\n`)
 
-test.beforeEach(async ({ page }) => { await page.goto('/#/lab'); await expect(page.getByRole('heading', { name: 'CodeMirror Vim feasibility laboratory' })).toBeVisible(); await editor(page).click() })
+test.beforeEach(async ({ page }) => { await page.goto('./#/lab'); await expect(page.getByRole('heading', { name: 'CodeMirror Vim feasibility laboratory' })).toBeVisible(); await editor(page).click() })
 
 test('supports Normal, Insert, Visual, movement, counts, operators, and text objects', async ({ page }) => {
   await page.keyboard.press('i'); await page.keyboard.type('note '); await page.keyboard.press('Escape')
