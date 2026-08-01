@@ -6,8 +6,39 @@ h1 { margin: .25rem 0; font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1; lett
 header { max-width: 850px; margin-bottom: 28px; } header p { color: #a9b8b3; } .eyebrow { color: #62d4aa; text-transform: uppercase; letter-spacing: .13em; font-size: .75rem; font-weight: 700; }
 .panel, .toolbar { border: 1px solid #30443e; background: rgba(20, 29, 27, .9); border-radius: 10px; padding: 18px; box-shadow: 0 14px 40px #0004; }
 .toolbar { display: flex; gap: 14px; align-items: end; margin-bottom: 16px; } label { display: grid; gap: 6px; color: #a9b8b3; font-size: .8rem; } select, button { font: inherit; color: #eaf4f0; background: #263a34; border: 1px solid #466159; border-radius: 6px; padding: 9px 11px; } button { cursor: pointer; } button:hover { background: #315047; }
+button:focus-visible, a:focus-visible, select:focus-visible { outline: 3px solid #f1cc83; outline-offset: 3px; }
 .workspace { display: grid; grid-template-columns: minmax(0, 3fr) minmax(230px, 1fr); gap: 16px; margin-bottom: 16px; } .editor-panel { padding: 0; overflow: hidden; } .editor-panel h2 { padding: 18px 18px 0; }
 .editor { min-height: 390px; border-top: 1px solid #30443e; } .cm-editor { min-height: 390px; font-size: 15px; background: #0d1211; } .cm-scroller { font-family: "Ubuntu Mono", "DejaVu Sans Mono", monospace; line-height: 1.65; } .cm-gutters { background: #141d1b !important; color: #526861 !important; border: 0 !important; } .cm-focused { outline: 2px solid #62d4aa55 !important; }
 dl { display: grid; grid-template-columns: 1fr auto; gap: 8px; font-family: monospace; } dt { color: #879a94; } dd { margin: 0; } output { display: block; min-height: 74px; padding: 10px; border-radius: 6px; background: #0c1210; overflow-wrap: anywhere; font: .8rem/1.5 monospace; }
 .replay { margin-bottom: 16px; } .replay label { max-width: 340px; } .replay code { color: #f1cc83; } .buttons { display: flex; gap: 8px; margin-top: 14px; } .check { display: flex; align-items: center; margin: 10px 0; font-size: .9rem; }
+
+.practice-screen { width: min(1040px, calc(100% - 48px)); padding-top: 24px; }
+.product-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 46px; }
+.brand { color: #eff8f4; font-size: 1.1rem; font-weight: 800; letter-spacing: -.02em; text-decoration: none; }
+.brand span { margin-left: 8px; color: #78918a; font-size: .65rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.lab-link { color: #91aaa3; font-size: .82rem; text-underline-offset: 4px; }
+.practice-header { max-width: 760px; margin-bottom: 24px; }
+.practice-header h1 { font-size: clamp(2.2rem, 5vw, 4rem); color: #f3faf7; }
+.lesson-label, .hint-count { color: #62d4aa !important; font-size: .72rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.goal { max-width: 720px; margin: 14px 0 0; color: #c2d0cc !important; font-size: 1.08rem; line-height: 1.65; }
+.practice-card { overflow: hidden; border: 1px solid #3a5049; border-radius: 16px; background: #111917; box-shadow: 0 26px 70px #0007; }
+.practice-card .editor { min-height: 430px; }
+.practice-card .cm-editor { min-height: 430px; font-size: 17px; }
+.editor-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; }
+.editor-bar h2 { margin: 0; color: #9db1ab; font-size: .72rem; }
+.mode-pill { padding: 6px 10px; border: 1px solid #3b554d; border-radius: 999px; color: #91aaa3; font: .75rem monospace; }
+.mode-pill strong { color: #79e0ba; text-transform: uppercase; }
+.practice-actions { display: flex; gap: 10px; padding: 16px 18px; border-top: 1px solid #30443e; }
+.practice-actions .primary { margin-left: auto; border-color: #62d4aa; background: #4bc397; color: #07120e; font-weight: 800; }
+.practice-actions .primary:hover { background: #72dbb5; }
+.practice-actions .secondary { background: transparent; }
+kbd { padding: 2px 5px; border: 1px solid #3a7f68; border-bottom-width: 2px; border-radius: 4px; font: .68rem monospace; }
+.hint-card, .feedback { margin-top: 16px; padding: 18px 20px; border: 1px solid #30443e; border-radius: 12px; background: #17211e; line-height: 1.55; }
+.hint-card p, .feedback p { margin: 5px 0; }
+.hint-card { border-color: #665b38; background: #201d14; }
+.demo-button, .retry { margin-top: 12px; }
+.feedback { min-height: 78px; color: #afc0ba; }
+.feedback strong { color: #edf7f3; }
+.feedback.success { border-color: #3f886e; background: #14271f; }
+.feedback.mode { border-color: #8d743d; }
 @media (max-width: 900px) { .workspace { grid-template-columns: 1fr; } main { width: calc(100% - 24px); } }
