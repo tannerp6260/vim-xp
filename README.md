@@ -1,6 +1,8 @@
 # Vim Fluency engine laboratory
 
-An early client-side Vim apprenticeship built on CodeMirror 6 + `@replit/codemirror-vim`. The repository contains one complete learning-loop checkpoint at `#/practice` plus the original diagnostic engine laboratory at `#/lab`; it is not yet a complete curriculum or adaptive system.
+An early client-side Vim apprenticeship built on CodeMirror 6 + `@replit/codemirror-vim`. `#/practice` now provides a finite seven-exercise session drawn from nine C++, CMake, and shell variants around precise operator and inner-text-object edits. The original diagnostic laboratory remains at `#/lab`.
+
+Progress stays in versioned browser-local storage. There are no accounts, backend, telemetry, runtime AI, timers, leaderboards, or broad Vim compatibility claims.
 
 The feasibility conclusion is **Suitable with bounded limitations**. The validated Vim adapter is pinned exactly at `@replit/codemirror-vim` 6.4.0. Chrome manual checks confirmed Ctrl-R redo, Ctrl-A increment, Ctrl-F forward movement in a sufficiently long document, around text objects, synchronized automated/stepped replay, and full reset. Ctrl-W closes the browser tab, is explicitly unsupported, and must not be taught as working in the browser. Firefox has automated Playwright coverage, but no manual Firefox pass is claimed.
 

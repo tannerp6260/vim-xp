@@ -33,6 +33,7 @@ export type KnownStrategy = {
 export type Exercise = {
   id: ExerciseId
   version: ContentVersion
+  variantGroupId: string
   title: string
   prompt: string
   initial: ExerciseInitialState
@@ -43,6 +44,8 @@ export type Exercise = {
   hints: string[]
   referenceSolutions: { id: string; tokens: string[] }[]
   difficulty: { level: 1 | 2 | 3 | 4 | 5; estimatedMinutes: number }
+  friction: 'low' | 'medium' | 'high'
+  role: 'introduction' | 'reinforcement' | 'transfer' | 'review'
 }
 
 export type Curriculum = { version: ContentVersion; concepts: Concept[]; exercises: Exercise[] }
