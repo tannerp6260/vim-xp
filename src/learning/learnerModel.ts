@@ -1,6 +1,6 @@
 import type { ConceptId, ExerciseId } from '../content/model'
 
-export type AttemptEvidence = { exerciseId: ExerciseId; conceptIds: ConceptId[]; correct: boolean; incorrectChecks: number; hintLevel: number; demonstrated: boolean; skipped: boolean; completedAt: number }
+export type AttemptEvidence = { sessionId: string; exerciseId: ExerciseId; conceptIds: ConceptId[]; correct: boolean; incorrectChecks: number; hintLevel: number; demonstrated: boolean; skipped: boolean; completedAt: number }
 export type ConceptState = { strength: number; confidence: number; successes: number; exposures: number; variants: string[]; lastSeenAt: number; dueAt: number; recentExerciseIds: ExerciseId[] }
 export type LearnerState = { concepts: Partial<Record<ConceptId, ConceptState>>; attempts: AttemptEvidence[] }
 export const emptyLearnerState = (): LearnerState => ({ concepts: {}, attempts: [] })
@@ -15,11 +15,12 @@ export function updateLearner(state: LearnerState, evidence: AttemptEvidence, va
       concepts[id] = { ...old, lastSeenAt: evidence.completedAt, dueAt: evidence.completedAt, recentExerciseIds: [evidence.exerciseId, ...old.recentExerciseIds.filter((item) => item !== evidence.exerciseId)].slice(0, 5) }
       continue
     }
-    const independent = evidence.correct && evidence.hintLevel < 3 && !evidence.demonstrated
-    const assistance = evidence.hintLevel * .05 + (evidence.demonstrated ? .2 : 0)
-    const strengthDelta = evidence.correct ? Math.max(.04, .22 - assistance - Math.min(.08, evidence.incorrectChecks * .03)) : -.12
+    const independent = evidence.correct && evidence.hintLevel === 0 && !evidence.demonstrated && evidence.incorrectChecks === 0
+    const hintWeight = [1, .65, .4, .05, 0][Math.min(4, evidence.hintLevel)]
+    const errorWeight = Math.max(0, 1 - evidence.incorrectChecks * .25)
+    const strengthDelta = evidence.correct && !evidence.demonstrated ? .22 * hintWeight * errorWeight : evidence.correct ? 0 : -.12
     const varied = !old.variants.includes(variantGroupId)
-    const confidenceDelta = independent ? (varied ? .18 : .09) : evidence.correct ? .03 : .02
+    const confidenceDelta = independent ? (varied ? .18 : .09) : evidence.demonstrated ? .03 : evidence.correct ? .05 : .02
     const strength = clamp(old.strength + strengthDelta)
     concepts[id] = { strength, confidence: clamp(old.confidence + confidenceDelta), successes: old.successes + (evidence.correct ? 1 : 0), exposures: old.exposures + 1,
       variants: [variantGroupId, ...old.variants.filter((item) => item !== variantGroupId)].slice(0, 6), lastSeenAt: evidence.completedAt,

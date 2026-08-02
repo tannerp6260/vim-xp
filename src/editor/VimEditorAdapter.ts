@@ -36,11 +36,12 @@ export class VimEditorAdapter {
     return { document: this.view.state.doc.toString(), cursor: range.head, selection: { from: range.from, to: range.to }, mode, trace: [...this.trace] }
   }
   subscribe(listener: (state: EditorSnapshot) => void) { this.listeners.add(listener); listener(this.snapshot()); return () => this.listeners.delete(listener) }
-  async replay(tokens: string[], stepDelay = 0) {
+  async replay(tokens: string[], stepDelay = 0, signal?: AbortSignal) {
     this.focus()
     const cm = getCM(this.view)
     if (!cm) throw new Error('CodeMirror Vim compatibility adapter is unavailable')
     for (const token of tokens.flatMap(expandReplayToken)) {
+      if (signal?.aborted) return
       const handled = Vim.handleKey(cm, token, 'replay')
       if (!handled && cm.state.vim?.insertMode && token.length === 1) cm.replaceSelection(token)
       this.trace.push(token)

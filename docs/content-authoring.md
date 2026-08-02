@@ -26,6 +26,8 @@ The outcome evaluator decides correctness from observed document and mode state.
 
 Hints are ordered from conceptual guidance through command family and exact technique to an optional demonstration. They are learner-controlled and non-punitive. A demonstration resets the editor, replays a reference solution visibly, and asks the learner to reset and reproduce it; watching does not count as independent completion.
 
+Resetting an exercise preserves hints already requested and demonstration-viewed evidence for that attempt. Resetting all local progress cancels any active replay and clears every transient assistance, feedback, and editor state.
+
 ## Validation and reference solutions
 
 `validateCurriculum` rejects duplicate IDs, unknown concept references, invalid initial cursor/selection positions, empty prompts or hint ladders, unsupported outcome rules, and empty reference solutions. `validateReferenceSolutions` evaluates replayed reference states against the same declared outcome. Browser coverage must replay every new reference solution through the actual Vim adapter from a clean initial state and prove it passes.

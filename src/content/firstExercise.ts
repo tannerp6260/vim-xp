@@ -11,7 +11,7 @@ function makeExercise(def: Definition): Exercise {
   const cursor = def.initial.indexOf(def.before) + Math.max(0, Math.floor(def.before.length / 2))
   const final = def.initial.replace(def.before, def.after)
   const inserted = def.after
-  const tokens = def.command === 'di(' ? ['d', 'i', '(', '<Esc>'] : [def.command[0], 'i', def.command[2] ?? 'w', inserted, '<Esc>']
+  const tokens = def.command === 'di(' ? ['d', 'i', '('] : [def.command[0], 'i', def.command[2] ?? 'w', inserted, '<Esc>']
   const technique = def.command === 'ci"' ? 'quoted value' : def.command === 'ciw' ? 'word' : 'parenthesized content'
   return {
     id: def.id, version: '1.0.0', variantGroupId: def.variant, title: def.title, prompt: def.prompt,
@@ -24,7 +24,7 @@ function makeExercise(def: Definition): Exercise {
       'Look for the smallest meaningful text object that contains only what should change.',
       `Combine an operator with an inner ${technique} target.`,
       `Use \`${def.command}\` to target the ${technique}.`,
-      `Watch a stepped replay of \`${def.command}${inserted ? `${inserted}<Esc>` : ''}\`, then reset and reproduce it.`,
+      `Watch a stepped replay of \`${def.command}${def.command === 'di(' ? '' : `${inserted}<Esc>`}\`, then reset and reproduce it.`,
     ],
     referenceSolutions: [{ id: 'intended', tokens }], difficulty: { level: def.level, estimatedMinutes: 1 }, friction: def.friction, role: def.role,
   }
@@ -39,7 +39,7 @@ const definitions: Definition[] = [
   { id: 'exercise.word-cmake-retry-policy', variant: 'word-retry-policy', title: 'Back off retries', prompt: 'Change the retry policy from `immediate` to `exponential`.', language: 'cmake', initial: `set(RETRY_POLICY immediate)\nset(RETRY_LIMIT 5)\n`, before: 'immediate', after: 'exponential', command: 'ciw', role: 'review', friction: 'low', level: 1 },
   { id: 'exercise.parens-clear-cache-args', variant: 'parens-clear-args', title: 'Clear the cache arguments', prompt: 'Remove both arguments from the invalidate call while keeping the parentheses and semicolon.', language: 'cpp', initial: `cache.invalidate(user_id, region);\nrefresh_view();\n`, before: 'user_id, region', after: '', command: 'di(', role: 'introduction', friction: 'medium', level: 2 },
   { id: 'exercise.parens-connect', variant: 'parens-connect', title: 'Change connection arguments', prompt: 'Update the call so it connects to `replica` with `5` retries. Preserve the call structure.', language: 'cpp', initial: `connect(primary, 3);\nawait_ready();\n`, before: 'primary, 3', after: 'replica, 5', command: 'ci(', role: 'transfer', friction: 'high', level: 3 },
-  { id: 'exercise.parens-run-checks', variant: 'parens-run-checks', title: 'Narrow the check suite', prompt: 'Change the call to run only the `smoke` checks. Preserve the function name and delimiters.', language: 'cmake', initial: `run_checks(unit, integration);\nreport_results();\n`, before: 'unit, integration', after: 'smoke', command: 'ci(', role: 'transfer', friction: 'medium', level: 2 },
+  { id: 'exercise.parens-run-checks', variant: 'parens-run-checks', title: 'Narrow the check suite', prompt: 'Change the call to run only the `smoke` checks. Preserve the function name and delimiters.', language: 'cmake', initial: `run_checks(unit integration)\nreport_results()\n`, before: 'unit integration', after: 'smoke', command: 'ci(', role: 'transfer', friction: 'medium', level: 2 },
 ]
 
 export const exercises = definitions.map(makeExercise)

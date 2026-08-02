@@ -9,7 +9,7 @@ describe('session planner', () => {
   it('uses the deliberate seven-exercise first session', () => expect(planSession(curriculum, emptyLearnerState(), clock, 1, true).exerciseIds).toHaveLength(7))
   it('prioritizes weak due work and avoids adjacent variants and high friction', () => {
     let learner = emptyLearnerState()
-    learner = updateLearner(learner, { exerciseId: 'exercise.change-inside-quotes', conceptIds: ['concept.inner-quotes'], correct: false, incorrectChecks: 2, hintLevel: 0, demonstrated: false, skipped: false, completedAt: 1 }, 'quotes-environment')
+    learner = updateLearner(learner, { sessionId: 'session-1', exerciseId: 'exercise.change-inside-quotes', conceptIds: ['concept.inner-quotes'], correct: false, incorrectChecks: 2, hintLevel: 0, demonstrated: false, skipped: false, completedAt: 1 }, 'quotes-environment')
     const plan = planSession(curriculum, learner, clock, 7, false)
     const chosen = plan.exerciseIds.map((id) => curriculum.exercises.find((exercise) => exercise.id === id)!)
     expect(chosen.slice(0, 3).some((exercise) => exercise.primaryConcepts[0] === 'concept.inner-quotes')).toBe(true)
@@ -25,5 +25,14 @@ describe('session planner', () => {
     const positions = Array.from({ length: 500 }, (_, seed) => planSession(curriculum, learner, clock, seed * 97, false).exerciseIds.slice(0, 2)).filter((ids) => ids.some((id) => id.includes('quotes'))).length
     expect(positions).toBeGreaterThan(0)
     expect(positions).toBeLessThan(500)
+  })
+  it('penalizes variants used by the prior session when alternatives exist', () => {
+    const first = planSession(curriculum, emptyLearnerState(), clock, 31, false)
+    const recent = first.exerciseIds.map((id) => curriculum.exercises.find((exercise) => exercise.id === id)!.variantGroupId)
+    const withoutHistory = planSession(curriculum, emptyLearnerState(), clock, 99, false)
+    const withHistory = planSession(curriculum, emptyLearnerState(), clock, 99, false, recent)
+    const overlap = (ids: typeof withHistory.exerciseIds) => ids.slice(0, 2).filter((id) => recent.includes(curriculum.exercises.find((exercise) => exercise.id === id)!.variantGroupId)).length
+    expect(overlap(withHistory.exerciseIds)).toBeLessThanOrEqual(overlap(withoutHistory.exerciseIds))
+    expect(withHistory.exerciseIds).not.toEqual(withoutHistory.exerciseIds)
   })
 })

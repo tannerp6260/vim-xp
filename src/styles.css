@@ -5,7 +5,7 @@ main { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 36px 0 60
 h1 { margin: .25rem 0; font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1; letter-spacing: -.04em; } h2 { margin-top: 0; font-size: 1rem; text-transform: uppercase; letter-spacing: .08em; color: #8fd7bd; } h3 { font-size: .85rem; }
 header { max-width: 850px; margin-bottom: 28px; } header p { color: #a9b8b3; } .eyebrow { color: #62d4aa; text-transform: uppercase; letter-spacing: .13em; font-size: .75rem; font-weight: 700; }
 .panel, .toolbar { border: 1px solid #30443e; background: rgba(20, 29, 27, .9); border-radius: 10px; padding: 18px; box-shadow: 0 14px 40px #0004; }
-.toolbar { display: flex; gap: 14px; align-items: end; margin-bottom: 16px; } label { display: grid; gap: 6px; color: #a9b8b3; font-size: .8rem; } select, button { font: inherit; color: #eaf4f0; background: #263a34; border: 1px solid #466159; border-radius: 6px; padding: 9px 11px; } button { cursor: pointer; } button:hover { background: #315047; }
+.toolbar { display: flex; gap: 14px; align-items: end; margin-bottom: 16px; } label { display: grid; gap: 6px; color: #a9b8b3; font-size: .8rem; } select, button { font: inherit; color: #eaf4f0; background: #263a34; border: 1px solid #466159; border-radius: 6px; padding: 9px 11px; } button { cursor: pointer; } button:hover { background: #315047; } button:disabled { cursor: not-allowed; opacity: .55; }
 button:focus-visible, a:focus-visible, select:focus-visible { outline: 3px solid #f1cc83; outline-offset: 3px; }
 .workspace { display: grid; grid-template-columns: minmax(0, 3fr) minmax(230px, 1fr); gap: 16px; margin-bottom: 16px; } .editor-panel { padding: 0; overflow: hidden; } .editor-panel h2 { padding: 18px 18px 0; }
 .editor { min-height: 390px; border-top: 1px solid #30443e; } .cm-editor { min-height: 390px; font-size: 15px; background: #0d1211; } .cm-scroller { font-family: "Ubuntu Mono", "DejaVu Sans Mono", monospace; line-height: 1.65; } .cm-gutters { background: #141d1b !important; color: #526861 !important; border: 0 !important; } .cm-focused { outline: 2px solid #62d4aa55 !important; }
@@ -19,6 +19,7 @@ dl { display: grid; grid-template-columns: 1fr auto; gap: 8px; font-family: mono
 .brand { color: #eff8f4; font-size: 1.1rem; font-weight: 800; letter-spacing: -.02em; text-decoration: none; }
 .brand span { margin-left: 8px; color: #78918a; font-size: .65rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
 .lab-link { color: #91aaa3; font-size: .82rem; text-underline-offset: 4px; }
+.lab-link.disabled { cursor: not-allowed; opacity: .55; }
 .practice-header { max-width: 760px; margin-bottom: 24px; }
 .practice-header h1 { font-size: clamp(2.2rem, 5vw, 4rem); color: #f3faf7; }
 .lesson-label, .hint-count { color: #62d4aa !important; font-size: .72rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }

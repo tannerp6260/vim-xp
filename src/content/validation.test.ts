@@ -48,4 +48,18 @@ describe('content validation', () => {
   it('rejects reference solutions whose replayed state misses the outcome', async () => {
     await expect(validateReferenceSolutions(copy(), async () => ({ document: 'wrong', mode: 'normal' }))).rejects.toThrow(/does not satisfy/)
   })
+
+  it('declares di( as complete in Normal mode without Escape', () => {
+    const exercise = curriculum.exercises.find((item) => item.id === 'exercise.parens-clear-cache-args')!
+    expect(exercise.referenceSolutions[0].tokens).toEqual(['d', 'i', '('])
+    expect(exercise.strategies[0].trace).toEqual(['d', 'i', '('])
+    expect(exercise.hints[3]).toContain('`di(`')
+    expect(exercise.hints[3]).not.toContain('Escape')
+  })
+
+  it('uses language-appropriate syntax for every fixture', () => {
+    const cmake = curriculum.exercises.filter((item) => item.initial.language === 'cmake')
+    expect(cmake.find((item) => item.id === 'exercise.parens-run-checks')!.initial.document).toBe('run_checks(unit integration)\nreport_results()\n')
+    expect(cmake.every((item) => !item.initial.document.includes(';'))).toBe(true)
+  })
 })
