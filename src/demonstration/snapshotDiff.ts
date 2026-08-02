@@ -25,6 +25,11 @@ export function diffSnapshots(before: EditorSnapshot, after: EditorSnapshot): Sn
     return { kind: 'inserted', message: `Inserted “${inserted}”.${mode}`, range: { from: prefix, to: prefix + inserted.length }, modeChange }
   }
   if (modeChange) return { kind: 'mode', message: `Mode changed from ${modeName(modeChange.from)} to ${modeName(modeChange.to)}.`, modeChange }
-  if (before.cursor !== after.cursor || before.selection.from !== after.selection.from || before.selection.to !== after.selection.to) return { kind: 'cursor', message: 'The cursor or selection moved; the document did not change.' }
+  if (before.cursor !== after.cursor || before.selection.from !== after.selection.from || before.selection.to !== after.selection.to) {
+    const prefix = after.document.slice(0, after.cursor); const line = prefix.split('\n').length; const column = after.cursor - prefix.lastIndexOf('\n')
+    const character = after.document[after.cursor]; const direction = after.cursor > before.cursor ? 'forward' : after.cursor < before.cursor ? 'backward' : ''
+    const destination = character === '\n' ? 'the end-of-line boundary' : character === ' ' ? 'Space' : character ? `“${character}”` : 'the document boundary'
+    return { kind: 'cursor', message: `Cursor moved${direction ? ` ${direction}` : ''} to line ${line}, column ${column}, on ${destination}; the document did not change.`, ...(character && character !== '\n' ? { range: { from: after.cursor, to: after.cursor + 1 } } : { boundary: after.cursor }) }
+  }
   return { kind: 'none', message: 'No document change yet.' }
 }

@@ -8,4 +8,5 @@ describe('demonstration snapshot differences', () => {
   it('derives deletion and its surviving boundary', () => expect(diffSnapshots(snapshot('aOLDb'), snapshot('ab'))).toMatchObject({ kind: 'removed', message: 'Removed “OLD”.', boundary: 1 }))
   it('derives replacement', () => expect(diffSnapshots(snapshot('aOLDb'), snapshot('aNEWb'))).toMatchObject({ kind: 'replaced', message: 'Replaced “OLD” with “NEW”.', range: { from: 1, to: 4 } }))
   it('derives mode-only changes', () => expect(diffSnapshots(snapshot('same'), snapshot('same', 'insert'))).toMatchObject({ kind: 'mode', message: 'Mode changed from Normal to Insert.' }))
+  it('reports a useful cursor destination and range', () => expect(diffSnapshots(snapshot('first\nabc', 'normal', 0), snapshot('first\nabc', 'normal', 7))).toMatchObject({ kind: 'cursor', message: 'Cursor moved forward to line 2, column 2, on “b”; the document did not change.', range: { from: 7, to: 8 } }))
 })

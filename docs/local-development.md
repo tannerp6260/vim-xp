@@ -5,7 +5,7 @@
 3. From this directory run `nvm install` and `nvm use`. Confirm `node --version` is at least `v22.12` and begins with `v22`, then confirm `npm --version` works.
 4. Run `npm ci`. Use `npm install` only when intentionally changing dependencies and reviewing `package-lock.json`.
 5. Run `npx playwright install --with-deps chromium firefox` once per Playwright upgrade.
-6. Run `npm run dev`, then open the printed URL. Vite normally uses `http://localhost:5173`; the diagnostic hash is `#/lab`.
+6. Run `npm run dev`, then open the printed URL. Vite normally uses `http://localhost:5173`; use `#/practice`, `#/curriculum`, or the diagnostic `#/lab`.
 
 Commands:
 
@@ -22,3 +22,5 @@ Commands:
 Practice progress is stored only in the browser under `vim-xp-progress`. Use “Reset local progress” and confirm when manually replaying the prescribed first session. Pure scheduler tests inject clocks and seeds and never depend on real time.
 
 To verify the exact production application, run `npm run build`, then `npm run preview`, and open the printed preview URL. Stop either server with Ctrl+C. See `troubleshooting.md` for browser and Node problems.
+
+For the Pages base path, run `VITE_BASE_PATH=/vim-xp/ VITE_OUT_DIR=dist/vim-xp npm run build`, then `python -m http.server 4173 --bind 127.0.0.1 --directory dist`. Review `http://127.0.0.1:4173/vim-xp/#/curriculum`, `#/practice`, and `#/lab`. Reset local progress before checking Unit 1; start Unit 2 from Curriculum to review its prescribed sequence.

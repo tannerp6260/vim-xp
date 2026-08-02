@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import type { Exercise } from '../content/model'
+import { parseInlineMarkup } from '../content/inlineMarkup'
 import { diffSnapshots, type SnapshotEffect } from '../demonstration/snapshotDiff'
 import { initialPlayerState, reducePlayer } from '../demonstration/playerState'
 import type { VimEditorAdapter } from '../editor/VimEditorAdapter'
+import { demonstrationTokenLabel } from '../demonstration/display'
 
 const speeds = { slow: 1500, normal: 1100, fast: 700 } as const
 type Speed = keyof typeof speeds
+function InlineText({ text }: { text: string }) { return <>{parseInlineMarkup(text).map((part, index) => <Fragment key={index}>{part.type === 'code' ? <code>{part.value}</code> : part.value}</Fragment>)}</> }
 
 export function DemonstrationPlayer({ exercise, adapterRef, recreate, onDemonstrated, onExit, onBusyChange }: {
   exercise: Exercise
@@ -91,7 +94,7 @@ export function DemonstrationPlayer({ exercise, adapterRef, recreate, onDemonstr
   return <section className="demonstration-panel" aria-labelledby="demonstration-heading" data-testid="demonstration-player">
     <div className="demo-heading"><div><p className="lesson-label">Guided demonstration</p><h2 id="demonstration-heading">Build the command one idea at a time</h2></div><label>Playback speed<select aria-label="Playback speed" value={speed} onChange={(event) => setSpeed(event.target.value as Speed)} disabled={busy}>{speed === 'normal' && null}<option value="slow">Slow</option><option value="normal">Normal</option><option value="fast">Fast</option></select></label></div>
     <ol className="demo-timeline">
-      {steps.map((step, index) => { const status = index < state.nextIndex ? 'Completed' : index === activeIndex ? 'Active' : index === state.nextIndex ? 'Upcoming' : 'Later'; return <li key={step.id} className={status.toLowerCase()} data-step-id={step.id}><span className="step-status">{status}</span><span className="step-token">{step.display === 'literal' ? <code>{step.tokens.join('')}</code> : <kbd>{step.tokens[0] === '<Esc>' ? 'Esc' : step.tokens.join('')}</kbd>}</span><span><strong>{step.title}</strong><small>{step.explanation.replaceAll('`', '')}</small></span></li> })}
+      {steps.map((step, index) => { const status = index < state.nextIndex ? 'Completed' : index === activeIndex ? 'Active' : index === state.nextIndex ? 'Upcoming' : 'Later'; return <li key={step.id} className={status.toLowerCase()} data-step-id={step.id}><span className="step-status">{status}</span><span className="step-token">{step.display === 'literal' ? <code>{step.tokens.join('')}</code> : <kbd>{step.tokens.map(demonstrationTokenLabel).join('')}</kbd>}</span><span><strong><InlineText text={step.title} /></strong><small><InlineText text={step.explanation} /></small></span></li> })}
     </ol>
     <div className="demo-effect" role="status" aria-live="polite" aria-atomic="true" data-testid="demo-effect"><strong>What changed</strong><p>{effect?.message ?? (completed ? 'Demonstration complete. Reset and reproduce the edit yourself.' : 'Nothing has run yet. Next executes one teaching step.')}</p></div>
     {completed && <p className="demo-complete"><strong>Demonstration complete.</strong> The editor now matches the reference solution.</p>}
