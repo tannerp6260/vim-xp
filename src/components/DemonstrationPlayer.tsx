@@ -10,7 +10,7 @@ type Speed = keyof typeof speeds
 export function DemonstrationPlayer({ exercise, adapterRef, recreate, onDemonstrated, onExit, onBusyChange }: {
   exercise: Exercise
   adapterRef: React.MutableRefObject<VimEditorAdapter | null>
-  recreate: () => Promise<VimEditorAdapter>
+  recreate: (signal: AbortSignal) => Promise<VimEditorAdapter | null>
   onDemonstrated: () => void
   onExit: () => Promise<void>
   onBusyChange: (busy: boolean) => void
@@ -23,6 +23,7 @@ export function DemonstrationPlayer({ exercise, adapterRef, recreate, onDemonstr
   const abortRef = useRef<AbortController | null>(null)
   const timerRef = useRef<number | null>(null)
   const emphasisTimerRef = useRef<number | null>(null)
+  const mountedRef = useRef(true)
   const busy = activeIndex !== null
 
   const cancel = useCallback(() => {
@@ -33,26 +34,33 @@ export function DemonstrationPlayer({ exercise, adapterRef, recreate, onDemonstr
     emphasisTimerRef.current = null
   }, [])
 
-  useEffect(() => { const mountedAdapter = adapterRef.current; mountedAdapter?.setPlaybackLocked(true); return () => { cancel(); mountedAdapter?.setPlaybackLocked(false); mountedAdapter?.emphasize(null); onBusyChange(false) } }, [adapterRef, cancel, onBusyChange])
+  const beginOperation = useCallback(() => { cancel(); const controller = new AbortController(); abortRef.current = controller; return controller }, [cancel])
+  const isCurrent = useCallback((controller: AbortController) => mountedRef.current && abortRef.current === controller && !controller.signal.aborted, [])
+  const waitForFrame = useCallback((signal: AbortSignal) => new Promise<boolean>((resolve) => {
+    if (signal.aborted) { resolve(false); return }
+    const frame = window.requestAnimationFrame(() => { signal.removeEventListener('abort', abort); resolve(!signal.aborted) })
+    const abort = () => { window.cancelAnimationFrame(frame); resolve(false) }
+    signal.addEventListener('abort', abort, { once: true })
+  }), [])
+
+  useEffect(() => { mountedRef.current = true; const mountedAdapter = adapterRef.current; mountedAdapter?.setPlaybackLocked(true); return () => { mountedRef.current = false; cancel(); mountedAdapter?.setPlaybackLocked(false); mountedAdapter?.emphasize(null); onBusyChange(false) } }, [adapterRef, cancel, onBusyChange])
   useEffect(() => { onBusyChange(busy || state.playing) }, [busy, onBusyChange, state.playing])
 
   const executeNext = useCallback(async () => {
     if (activeIndex !== null || state.nextIndex >= steps.length) return
     const adapter = adapterRef.current
     if (!adapter) return
-    cancel(); const controller = new AbortController(); abortRef.current = controller
+    const controller = beginOperation()
     const index = state.nextIndex; const step = steps[index]; setActiveIndex(index); setEffect(null); adapter.emphasize(null); onDemonstrated()
-    await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()))
-    if (controller.signal.aborted) { setActiveIndex(null); return }
+    if (!await waitForFrame(controller.signal) || !isCurrent(controller)) return
     const before = adapter.snapshot()
     await adapter.replay(step.tokens, step.display === 'literal' ? 45 : 0, controller.signal)
-    if (!controller.signal.aborted) {
-      const derived = diffSnapshots(before, adapter.snapshot()); setEffect(derived); adapter.emphasize(derived)
-      emphasisTimerRef.current = window.setTimeout(() => { adapter.emphasize(null); emphasisTimerRef.current = null }, 1600)
-      dispatch({ type: 'next', stepCount: steps.length })
-    }
+    if (!isCurrent(controller)) return
+    const derived = diffSnapshots(before, adapter.snapshot()); setEffect(derived); adapter.emphasize(derived)
+    emphasisTimerRef.current = window.setTimeout(() => { if (isCurrent(controller)) adapter.emphasize(null); emphasisTimerRef.current = null }, 1600)
+    dispatch({ type: 'next', stepCount: steps.length })
     setActiveIndex(null)
-  }, [activeIndex, adapterRef, cancel, onDemonstrated, state.nextIndex, steps])
+  }, [activeIndex, adapterRef, beginOperation, isCurrent, onDemonstrated, state.nextIndex, steps, waitForFrame])
 
   useEffect(() => {
     if (!state.playing || busy || state.nextIndex >= steps.length) return
@@ -61,9 +69,15 @@ export function DemonstrationPlayer({ exercise, adapterRef, recreate, onDemonstr
   }, [busy, executeNext, speed, state.nextIndex, state.playing, steps.length])
 
   const reconstruct = async (nextIndex: number) => {
-    cancel(); dispatch({ type: 'pause', stepCount: steps.length }); setActiveIndex(0); setEffect(null)
-    const adapter = await recreate(); adapter.setPlaybackLocked(true)
-    for (let index = 0; index < nextIndex; index += 1) await adapter.replay(steps[index].tokens)
+    const controller = beginOperation(); dispatch({ type: 'pause', stepCount: steps.length }); setActiveIndex(0); setEffect(null)
+    const adapter = await recreate(controller.signal)
+    if (!adapter || !isCurrent(controller)) return
+    adapter.setPlaybackLocked(true)
+    for (let index = 0; index < nextIndex; index += 1) {
+      await adapter.replay(steps[index].tokens, 0, controller.signal)
+      if (!isCurrent(controller)) return
+    }
+    if (!isCurrent(controller)) return
     dispatch({ type: 'restart', stepCount: steps.length })
     for (let index = 0; index < nextIndex; index += 1) dispatch({ type: 'next', stepCount: steps.length })
     setActiveIndex(null)
@@ -71,7 +85,7 @@ export function DemonstrationPlayer({ exercise, adapterRef, recreate, onDemonstr
   const previous = () => { if (!busy && state.nextIndex > 0) void reconstruct(state.nextIndex - 1) }
   const restart = () => { if (!busy) void reconstruct(0) }
   const togglePlay = () => { cancel(); dispatch({ type: state.playing ? 'pause' : 'play', stepCount: steps.length }) }
-  const exit = async () => { cancel(); dispatch({ type: 'pause', stepCount: steps.length }); await onExit() }
+  const exit = async () => { cancel(); if (!mountedRef.current) return; dispatch({ type: 'pause', stepCount: steps.length }); await onExit() }
   const completed = state.nextIndex === steps.length
 
   return <section className="demonstration-panel" aria-labelledby="demonstration-heading" data-testid="demonstration-player">

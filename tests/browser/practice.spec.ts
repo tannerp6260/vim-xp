@@ -7,6 +7,11 @@ async function changeQuotes(page: Page, value = 'production') { await page.keybo
 async function perform(page: Page, keys: string[], inserted = '') { for (const key of keys) await page.keyboard.press(key); if (inserted) await page.keyboard.type(inserted); if (keys[0] === 'c') await page.keyboard.press('Escape'); await page.keyboard.press('Control+Enter') }
 async function openDemonstration(page: Page) { for (let index = 1; index <= 4; index += 1) await page.getByRole('button', { name: index === 1 ? 'Hint' : 'Next hint' }).click(); await page.getByRole('button', { name: 'Watch stepped demonstration' }).click(); await expect(page.getByTestId('demonstration-player')).toBeVisible() }
 async function nextDemoStep(page: Page, stepId: string) { await page.getByRole('button', { name: 'Next step' }).click(); await expect(page.locator(`[data-step-id="${stepId}"] .step-status`)).toHaveText('Completed') }
+async function resetProgressDuringDemo(page: Page) { page.once('dialog', (dialog) => dialog.accept()); await page.getByRole('button', { name: 'Reset local progress' }).click() }
+async function expectStableResetAndCleanAttempt(page: Page, initialText: string) {
+  await page.waitForTimeout(750); await expect(page.getByTestId('demonstration-player')).toHaveCount(0); expect(await documentText(page)).toBe(initialText); await expect(page.getByTestId('practice-mode')).toHaveText('normal'); await expect(page.locator('.demo-emphasis, .demo-boundary')).toHaveCount(0); await expect(page.locator('.demo-effect, .demo-timeline')).toHaveCount(0)
+  await changeQuotes(page); await page.getByRole('button', { name: 'Check', exact: false }).click(); await expect(page.getByTestId('feedback')).toContainText('Exercise complete')
+}
 
 test('default and direct routes load practice under the Pages-style base path', async ({ page }) => {
   await page.goto('./'); await expect(page).toHaveURL(/\/vim-xp\/#\/practice$/); await expect(page.getByText('1 of 7')).toBeVisible()
@@ -90,6 +95,20 @@ test('reset progress clears hinted and demonstrated transient state and safely c
   await openPractice(page); await openDemonstration(page); await page.getByRole('button', { name: 'Play' }).click(); await expect(page.getByRole('button', { name: 'Skip for now' })).toBeDisabled()
   page.once('dialog', (dialog) => dialog.accept()); await page.getByRole('button', { name: 'Reset local progress' }).click()
   await expect(page.getByText('1 of 7')).toBeVisible(); await expect(page.locator('.hint-card')).toHaveCount(0); await expect(page.getByTestId('feedback')).toHaveText(/Make the edit/); await expect(page.getByTestId('practice-mode')).toHaveText('normal')
+})
+
+test('reset progress cancels stale Previous and Restart reconstruction after editor recreation begins', async ({ page }) => {
+  for (const operation of ['Previous step', 'Restart']) {
+    await openPractice(page); const initialText = await documentText(page); await openDemonstration(page); await nextDemoStep(page, 'operator'); await nextDemoStep(page, 'inner'); await nextDemoStep(page, 'target')
+    await page.evaluate(() => { window.requestAnimationFrame = ((callback: FrameRequestCallback) => window.setTimeout(() => callback(performance.now()), 180)) as typeof window.requestAnimationFrame; window.cancelAnimationFrame = ((handle: number) => window.clearTimeout(handle)) as typeof window.cancelAnimationFrame })
+    await page.getByRole('button', { name: operation }).click(); await resetProgressDuringDemo(page); await expectStableResetAndCleanAttempt(page, initialText)
+    page.once('dialog', (dialog) => dialog.accept()); await page.getByRole('button', { name: 'Reset local progress' }).click()
+  }
+})
+
+test('reset progress aborts multi-character literal typing without stale text or effects', async ({ page }) => {
+  await openPractice(page); const initialText = await documentText(page); await openDemonstration(page); await nextDemoStep(page, 'operator'); await nextDemoStep(page, 'inner'); await nextDemoStep(page, 'target')
+  await page.getByRole('button', { name: 'Next step' }).click(); await expect(page.locator('[data-step-id="replacement"] .step-status')).toHaveText('Active'); await resetProgressDuringDemo(page); await expectStableResetAndCleanAttempt(page, initialText)
 })
 
 test('demonstration remains assisted exposure under the existing learner weights', async ({ page }) => {

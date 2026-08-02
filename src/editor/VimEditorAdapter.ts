@@ -9,6 +9,15 @@ import { resetVimGlobalState } from './vimCompatibility'
 export type EditorSnapshot = { document: string; cursor: number; selection: { from: number; to: number }; mode: string; trace: string[] }
 export type EditorInitialState = { text: string; cursor: number; selection?: { anchor: number; head: number }; language?: 'cpp' | 'cmake' | 'shell' }
 
+export function abortableDelay(milliseconds: number, signal?: AbortSignal): Promise<boolean> {
+  if (signal?.aborted) return Promise.resolve(false)
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => { signal?.removeEventListener('abort', abort); resolve(true) }, milliseconds)
+    const abort = () => { clearTimeout(timer); resolve(false) }
+    signal?.addEventListener('abort', abort, { once: true })
+  })
+}
+
 type Emphasis = { from: number; to: number; boundary: boolean } | null
 const setEmphasis = StateEffect.define<Emphasis>()
 class BoundaryMarker extends WidgetType { toDOM() { const marker = document.createElement('span'); marker.className = 'demo-boundary'; marker.setAttribute('aria-hidden', 'true'); return marker } }
@@ -68,7 +77,7 @@ export class VimEditorAdapter {
       if (!handled && cm.state.vim?.insertMode && token.length === 1) cm.replaceSelection(token)
       this.trace.push(token)
       this.emit()
-      if (stepDelay) await new Promise((resolve) => setTimeout(resolve, stepDelay))
+      if (stepDelay && !await abortableDelay(stepDelay, signal)) return
     }
   }
   destroy() { this.view.contentDOM.removeEventListener('keydown', this.keyListener, true); getCM(this.view)?.off('vim-mode-change', this.modeListener); this.listeners.clear(); this.view.destroy() }

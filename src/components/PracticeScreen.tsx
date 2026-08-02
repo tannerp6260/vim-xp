@@ -59,9 +59,15 @@ export function PracticeScreen() {
     setDemoOpen(false); setDemoBusy(false); setHintCount(0); setFeedback(null); setComplete(false); setIncorrectChecks(0); setDemonstrated(false); setSnapshot(initialSnapshot(finished ? exercise : getExercise(session.exerciseIds[nextIndex]))); setGeneration((value) => value + 1)
   }
   const demonstrate = () => { setSnapshot(initialSnapshot(exercise)); setFeedback(null); setComplete(false); setGeneration((value) => value + 1); setDemoOpen(true) }
-  const waitForAdapter = async () => { await new Promise<void>((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()))); if (!adapterRef.current) throw new Error('Editor did not recreate for demonstration'); return adapterRef.current }
-  const recreateDemo = async () => { setSnapshot(initialSnapshot(exercise)); setGeneration((value) => value + 1); return waitForAdapter() }
-  const exitDemo = async () => { setDemoOpen(false); setDemoBusy(false); setFeedback(null); setComplete(false); setSnapshot(initialSnapshot(exercise)); setGeneration((value) => value + 1); await waitForAdapter() }
+  const waitForAdapter = (signal: AbortSignal) => new Promise<VimEditorAdapter | null>((resolve) => {
+    if (signal.aborted) { resolve(null); return }
+    let secondFrame = 0
+    const firstFrame = window.requestAnimationFrame(() => { secondFrame = window.requestAnimationFrame(() => { signal.removeEventListener('abort', abort); resolve(signal.aborted ? null : adapterRef.current) }) })
+    const abort = () => { window.cancelAnimationFrame(firstFrame); if (secondFrame) window.cancelAnimationFrame(secondFrame); resolve(null) }
+    signal.addEventListener('abort', abort, { once: true })
+  })
+  const recreateDemo = async (signal: AbortSignal) => { if (signal.aborted) return null; setSnapshot(initialSnapshot(exercise)); setGeneration((value) => value + 1); return waitForAdapter(signal) }
+  const exitDemo = async () => { setDemoOpen(false); setDemoBusy(false); setFeedback(null); setComplete(false); setSnapshot(initialSnapshot(exercise)); setGeneration((value) => value + 1) }
   const clearTransient = (nextExercise: Exercise) => { setDemoOpen(false); setDemoBusy(false); setHintCount(0); setFeedback(null); setComplete(false); setIncorrectChecks(0); setDemonstrated(false); setSnapshot(initialSnapshot(nextExercise)); setGeneration((value) => value + 1) }
   const anotherSession = () => { const next = planSession(curriculum, progress.learner, { now: Date.now }, (Date.now() + progress.learner.attempts.length) >>> 0, false, progress.recentVariants); setProgress({ ...progress, session: { ...next, index: 0, completed: false } }); clearTransient(getExercise(next.exerciseIds[0])) }
   const resetProgress = () => { if (!window.confirm('Reset all local Vim XP progress? This cannot be undone.')) return; store.reset(); const fresh = freshProgress(curriculum.version); const next = planSession(curriculum, fresh.learner, { now: Date.now }, Date.now() >>> 0, true); setProgress({ ...fresh, session: { ...next, index: 0, completed: false } }); clearTransient(getExercise(next.exerciseIds[0])) }
