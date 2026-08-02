@@ -1,12 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import { curriculum } from '../content/firstExercise'
 import { emptyLearnerState, updateLearner } from './learnerModel'
-import { planSession } from './planner'
+import { planSession, recommendedUnitId } from './planner'
 const clock = { now: () => 2_000_000_000 }
 
 describe('session planner', () => {
   it('is deterministic with injected seed and clock', () => expect(planSession(curriculum, emptyLearnerState(), clock, 42, false)).toEqual(planSession(curriculum, emptyLearnerState(), clock, 42, false)))
-  it('uses the deliberate seven-exercise first session', () => expect(planSession(curriculum, emptyLearnerState(), clock, 1, true).exerciseIds).toHaveLength(7))
+  it('uses the unchanged deliberate first session for a fresh learner', () => expect(planSession(curriculum, emptyLearnerState(), clock, 1, true)).toMatchObject({ unitId: 'unit.precise-text-objects', prescribed: true, exerciseIds: ['exercise.change-inside-quotes', 'exercise.quotes-cmake-build-type', 'exercise.word-shell-target', 'exercise.quotes-shell-base-url', 'exercise.parens-clear-cache-args', 'exercise.word-cpp-log-level', 'exercise.parens-run-checks'] }))
+  it('allows advanced direct access to the prescribed second unit', () => expect(planSession(curriculum, emptyLearnerState(), clock, 1, false, [], 'unit.line-targeting')).toMatchObject({ unitId: 'unit.line-targeting', prescribed: true, exerciseIds: ['exercise.line-find-assignment', 'exercise.line-till-shell-quote', 'exercise.line-find-cmake-paren', 'exercise.line-repeat-path-colon', 'exercise.line-change-first-argument', 'exercise.line-reverse-cpp-comma', 'exercise.line-change-shell-semicolon'] }))
+  it('recommends line targeting after the first unit has been encountered', () => {
+    const learner = updateLearner(emptyLearnerState(), { sessionId: 'one', exerciseId: 'exercise.change-inside-quotes', conceptIds: ['concept.inner-quotes'], correct: true, incorrectChecks: 0, hintLevel: 0, demonstrated: false, skipped: false, completedAt: 1 }, 'quotes-environment')
+    expect(recommendedUnitId(curriculum, emptyLearnerState())).toBe('unit.precise-text-objects'); expect(recommendedUnitId(curriculum, learner)).toBe('unit.line-targeting')
+  })
+  it('builds later focused sessions with five focus and two prerequisite reviews', () => {
+    const learner = updateLearner(emptyLearnerState(), { sessionId: 'line', exerciseId: 'exercise.line-find-assignment', conceptIds: ['concept.find-forward'], correct: true, incorrectChecks: 0, hintLevel: 0, demonstrated: false, skipped: false, completedAt: 1 }, 'line-find-assignment')
+    const plan = planSession(curriculum, learner, clock, 44, false, [], 'unit.line-targeting'); const lineIds = new Set(curriculum.units[1].exerciseIds)
+    expect(plan.exerciseIds.filter((id) => lineIds.has(id)).length).toBe(5); expect(plan.exerciseIds.filter((id) => !lineIds.has(id)).length).toBe(2)
+  })
   it('prioritizes weak due work and avoids adjacent variants and high friction', () => {
     let learner = emptyLearnerState()
     learner = updateLearner(learner, { sessionId: 'session-1', exerciseId: 'exercise.change-inside-quotes', conceptIds: ['concept.inner-quotes'], correct: false, incorrectChecks: 2, hintLevel: 0, demonstrated: false, skipped: false, completedAt: 1 }, 'quotes-environment')

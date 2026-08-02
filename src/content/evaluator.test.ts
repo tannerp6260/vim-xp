@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { coachAttempt } from './coaching'
 import { evaluateOutcome } from './evaluator'
-import { changeInsideQuotesExercise, finalDocument } from './firstExercise'
+import { changeInsideQuotesExercise, curriculum, finalDocument } from './firstExercise'
 
 describe('outcome evaluation', () => {
   it('evaluates exact document text', () => {
@@ -18,6 +18,21 @@ describe('outcome evaluation', () => {
     const result = evaluateOutcome({ type: 'all', rules: [{ type: 'exact-document', text: 'done' }, { type: 'required-mode', mode: 'normal' }] }, { document: 'done', mode: 'insert' })
     expect(result).toMatchObject({ passed: false, issues: [{ type: 'mode-mismatch' }] })
   })
+
+  it('evaluates an exact cursor outcome', () => {
+    expect(evaluateOutcome({ type: 'cursor-at', offset: 4 }, { document: 'value', mode: 'normal', cursor: 4 }).passed).toBe(true)
+    expect(evaluateOutcome({ type: 'cursor-at', offset: 4 }, { document: 'value', mode: 'normal', cursor: 2 }).issues[0]).toMatchObject({ type: 'cursor-mismatch', expected: 4, actual: 2 })
+  })
+})
+
+describe('cursor coaching', () => {
+  const exercise = curriculum.exercises.find((item) => item.id === 'exercise.line-find-assignment')!
+  it('distinguishes wrong cursor, changed text, and wrong mode', () => {
+    expect(coachAttempt(exercise, evaluateOutcome(exercise.outcome, { document: exercise.initial.document, cursor: 0, mode: 'normal' }), []).kind).toBe('cursor')
+    expect(coachAttempt(exercise, evaluateOutcome(exercise.outcome, { document: `${exercise.initial.document}x`, cursor: 0, mode: 'normal' }), []).kind).toBe('document')
+    const target = exercise.initial.document.indexOf('='); expect(coachAttempt(exercise, evaluateOutcome(exercise.outcome, { document: exercise.initial.document, cursor: target, mode: 'insert' }), []).kind).toBe('mode')
+  })
+  it('passes unknown correct movement strategies', () => { const target = exercise.initial.document.indexOf('='); const coaching = coachAttempt(exercise, evaluateOutcome(exercise.outcome, { document: exercise.initial.document, cursor: target, mode: 'normal' }), ['l', 'l']); expect(coaching.kind).toBe('success'); expect(coaching.strategyId).toBeUndefined() })
 })
 
 describe('correctness and coaching', () => {

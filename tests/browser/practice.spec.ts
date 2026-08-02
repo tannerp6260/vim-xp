@@ -12,6 +12,10 @@ async function expectStableResetAndCleanAttempt(page: Page, initialText: string)
   await page.waitForTimeout(750); await expect(page.getByTestId('demonstration-player')).toHaveCount(0); expect(await documentText(page)).toBe(initialText); await expect(page.getByTestId('practice-mode')).toHaveText('normal'); await expect(page.locator('.demo-emphasis, .demo-boundary')).toHaveCount(0); await expect(page.locator('.demo-effect, .demo-timeline')).toHaveCount(0)
   await changeQuotes(page); await page.getByRole('button', { name: 'Check', exact: false }).click(); await expect(page.getByTestId('feedback')).toContainText('Exercise complete')
 }
+async function loadExercise(page: Page, exerciseId: string, unitId?: string) {
+  await page.goto('./#/practice'); await page.evaluate(({ exerciseId, unitId }) => localStorage.setItem('vim-xp-progress', JSON.stringify({ schemaVersion: 3, curriculumVersion: '3.0.0', learner: { concepts: {}, attempts: [] }, recentVariants: [], session: { id: `test-${exerciseId}`, exerciseIds: [exerciseId], prescribed: false, createdAt: 1, seed: 1, index: 0, completed: false, ...(unitId ? { unitId } : {}) } })), { exerciseId, unitId }); await page.reload(); await expect(editor(page)).toBeVisible()
+}
+async function replayTokens(page: Page, tokens: string[]) { for (const token of tokens) { if (token === '<Esc>') await page.keyboard.press('Escape'); else if (token.length === 1) await page.keyboard.press(token === ' ' ? 'Space' : token); else await page.keyboard.type(token) } }
 
 test('default and direct routes load practice under the Pages-style base path', async ({ page }) => {
   await page.goto('./'); await expect(page).toHaveURL(/\/vim-xp\/#\/practice$/); await expect(page.getByText('1 of 7')).toBeVisible()
@@ -19,6 +23,41 @@ test('default and direct routes load practice under the Pages-style base path', 
 })
 
 test('the diagnostic lab remains available', async ({ page }) => { await page.goto('./#/lab'); await expect(page.getByRole('heading', { name: 'CodeMirror Vim feasibility laboratory' })).toBeVisible() })
+
+test('curriculum overview lists both advisory units and supports direct refresh', async ({ page }) => {
+  await page.goto('./#/curriculum'); await expect(page).toHaveURL(/\/vim-xp\/#\/curriculum$/); await expect(page.getByRole('heading', { name: 'Choose what to practice' })).toBeVisible(); await expect(page.locator('[data-unit-id]')).toHaveCount(2)
+  await expect(page.getByRole('heading', { name: 'Precise text objects' })).toBeVisible(); await expect(page.getByRole('heading', { name: 'Target within a line' })).toBeVisible(); await expect(page.getByText(/You can start here now/)).toBeVisible(); await page.reload(); await expect(page.locator('[data-unit-id="unit.line-targeting"]')).toBeVisible()
+})
+
+test('advanced learners can start unit two and replacing another unfinished unit requires confirmation', async ({ page }) => {
+  await page.goto('./#/curriculum'); await page.locator('[data-unit-id="unit.line-targeting"]').getByRole('button', { name: 'Begin unit' }).click(); await expect(page.getByText('Target within a line session')).toBeVisible(); await expect(page.getByRole('heading', { name: 'Land on the assignment' })).toBeVisible()
+  await page.goto('./#/curriculum'); page.once('dialog', (dialog) => dialog.dismiss()); await page.locator('[data-unit-id="unit.precise-text-objects"]').getByRole('button').click(); await expect(page).toHaveURL(/#\/curriculum$/)
+  page.once('dialog', (dialog) => dialog.accept()); await page.locator('[data-unit-id="unit.precise-text-objects"]').getByRole('button').click(); await expect(page.getByRole('heading', { name: 'Change inside quotes' })).toBeVisible()
+})
+
+test('later line-targeting focus includes prior-unit review', async ({ page }) => {
+  await page.goto('./#/curriculum'); await page.evaluate(() => localStorage.setItem('vim-xp-progress', JSON.stringify({ schemaVersion: 3, curriculumVersion: '3.0.0', learner: { concepts: { 'concept.find-forward': { strength: .22, confidence: .18, successes: 1, exposures: 1, variants: ['line-find-assignment'], lastSeenAt: 1, dueAt: 2, recentExerciseIds: ['exercise.line-find-assignment'] } }, attempts: [{ sessionId: 'prior-line', exerciseId: 'exercise.line-find-assignment', conceptIds: ['concept.find-forward'], correct: true, incorrectChecks: 0, hintLevel: 0, demonstrated: false, skipped: false, completedAt: 1 }] }, recentVariants: ['line-find-assignment'] }))); await page.reload(); await page.locator('[data-unit-id="unit.line-targeting"]').getByRole('button', { name: 'Practice unit' }).click()
+  const ids = await page.evaluate(() => JSON.parse(localStorage.getItem('vim-xp-progress')!).session.exerciseIds as string[]); expect(ids.filter((id) => id.startsWith('exercise.line-'))).toHaveLength(5); expect(ids.filter((id) => !id.startsWith('exercise.line-'))).toHaveLength(2)
+})
+
+test('f= navigation uses cursor-aware correctness and unknown correct movement still passes', async ({ page }) => {
+  await loadExercise(page, 'exercise.line-find-assignment', 'unit.line-targeting'); await page.getByRole('button', { name: 'Check', exact: false }).click(); await expect(page.getByTestId('feedback')).toContainText('cursor has not reached')
+  await page.getByRole('button', { name: 'Reset exercise' }).click(); await replayTokens(page, ['1', '7', 'l']); await page.getByRole('button', { name: 'Check', exact: false }).click(); await expect(page.getByTestId('feedback')).toContainText('Exercise complete'); await expect(page.getByTestId('feedback')).toContainText('several valid ways')
+})
+
+test('line movement demonstrations explain and emphasize the observed cursor destination', async ({ page }) => {
+  await loadExercise(page, 'exercise.line-find-assignment', 'unit.line-targeting'); await openDemonstration(page); await expect(page.locator('[data-step-id="find"] kbd')).toHaveText('f'); await expect(page.locator('[data-step-id="target"] kbd')).toHaveText('=')
+  await nextDemoStep(page, 'find'); await expect(page.getByTestId('demo-effect')).toContainText('No document change yet'); await nextDemoStep(page, 'target'); await expect(page.getByTestId('demo-effect')).toContainText(/line 1, column 18, on “=”/); await expect(page.locator('.demo-emphasis')).toHaveCount(1)
+})
+
+test('df Space is displayed semantically and passes through the real adapter', async ({ page }) => {
+  await loadExercise(page, 'exercise.line-delete-artifact', 'unit.line-targeting'); await openDemonstration(page); await expect(page.locator('[data-step-id="target"] kbd')).toHaveText('Space'); await page.getByRole('button', { name: 'Exit demonstration / reset and try it yourself' }).click(); await replayTokens(page, ['d', 'f', ' ']); await page.getByRole('button', { name: 'Check', exact: false }).click(); await expect(page.getByTestId('feedback')).toContainText('Exercise complete')
+})
+
+test('a realistic schema 2 payload migrates with learner evidence and its session intact', async ({ page }) => {
+  await page.goto('./#/practice'); await page.evaluate(() => localStorage.setItem('vim-xp-progress', JSON.stringify({ schemaVersion: 2, curriculumVersion: '2.0.0', learner: { concepts: { 'concept.inner-quotes': { strength: .44, confidence: .31, successes: 2, exposures: 3, variants: ['quotes-environment'], lastSeenAt: 100, dueAt: 200, recentExerciseIds: ['exercise.change-inside-quotes'] } }, attempts: [{ sessionId: 'legacy', exerciseId: 'exercise.change-inside-quotes', conceptIds: ['concept.inner-quotes'], correct: true, incorrectChecks: 0, hintLevel: 0, demonstrated: false, skipped: false, completedAt: 100 }] }, recentVariants: ['quotes-environment'], session: { id: 'legacy', exerciseIds: ['exercise.change-inside-quotes', 'exercise.quotes-cmake-build-type'], prescribed: true, createdAt: 1, seed: 1, index: 1, completed: false } }))); await page.reload(); await expect(page.getByText('2 of 2')).toBeVisible()
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('vim-xp-progress')!)); expect(stored).toMatchObject({ schemaVersion: 3, curriculumVersion: '3.0.0', session: { id: 'legacy', index: 1, unitId: 'unit.precise-text-objects' }, learner: { concepts: { 'concept.inner-quotes': { strength: .44, confidence: .31 } } } })
+})
 
 test('renders semantic command markup without raw backticks', async ({ page }) => {
   await openPractice(page); await expect(page.locator('.goal code', { hasText: 'staging' })).toBeVisible(); await expect(page.locator('.goal')).not.toContainText('`')
@@ -41,7 +80,7 @@ test('accepts a correct alternative and keeps correctness independent of strateg
 test('manual ci" demonstration explains and executes one semantic step at a time', async ({ page }) => {
   await openPractice(page); const initialText = await documentText(page); await openDemonstration(page)
   expect(await documentText(page)).toBe(initialText); await expect(page.getByTestId('practice-mode')).toHaveText('normal'); await expect(page.locator('[data-step-id="operator"] .step-status')).toHaveText('Upcoming')
-  await expect(page.locator('[data-step-id="operator"] kbd')).toHaveText('c'); await expect(page.locator('[data-step-id="inner"] kbd')).toHaveText('i'); await expect(page.locator('[data-step-id="target"] kbd')).toHaveText('"'); await expect(page.locator('[data-step-id="replacement"] code')).toHaveText('production'); await expect(page.locator('[data-step-id="normal-mode"] kbd')).toHaveText('Esc')
+  await expect(page.locator('[data-step-id="operator"] kbd')).toHaveText('c'); await expect(page.locator('[data-step-id="inner"] kbd')).toHaveText('i'); await expect(page.locator('[data-step-id="target"] kbd')).toHaveText('"'); await expect(page.locator('[data-step-id="replacement"] .step-token code')).toHaveText('production'); await expect(page.locator('[data-step-id="normal-mode"] kbd')).toHaveText('Esc')
   await nextDemoStep(page, 'operator'); expect(await documentText(page)).toBe(initialText); await expect(page.getByTestId('demo-effect')).toContainText('No document change yet')
   await nextDemoStep(page, 'inner'); expect(await documentText(page)).toBe(initialText); await expect(page.getByTestId('demo-effect')).toContainText('No document change yet')
   await nextDemoStep(page, 'target'); expect(await documentText(page)).toBe(initialText.replace('staging', '')); await expect(page.getByTestId('demo-effect')).toContainText('Removed “staging”'); await expect(page.getByTestId('demo-effect')).toContainText('Normal to Insert'); await expect(page.getByTestId('practice-mode')).toHaveText('insert')
@@ -71,7 +110,7 @@ test('all-skipped session reports zero completed without claiming edits', async 
   await openPractice(page); await page.getByRole('button', { name: 'Skip for now' }).click(); await expect(page.getByText('2 of 7')).toBeVisible(); await page.reload(); await expect(page.getByText('2 of 7')).toBeVisible()
   for (let index = 0; index < 6; index += 1) await page.getByRole('button', { name: 'Skip for now' }).click()
   await expect(page.getByRole('heading', { name: 'Session complete' })).toBeVisible(); await expect(page.getByTestId('session-summary')).toHaveText('0 completed · 7 skipped'); await expect(page.getByRole('heading', { name: 'Seven precise edits, done.' })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Practice another session' }).click(); await expect(page.getByText('1 of 7')).toBeVisible()
+  await page.getByRole('button', { name: /Continue to|Practice another/ }).click(); await expect(page.getByText('1 of 7')).toBeVisible()
 })
 
 test('mixed session reports completed and skipped counts neutrally', async ({ page }) => {
@@ -84,7 +123,7 @@ test('genuinely completing all seven earns the precise-edits summary', async ({ 
   await openPractice(page)
   const sequence: [string[], string][] = [[['c', 'i', '"'], 'production'], [['c', 'i', '"'], 'Release'], [['c', 'i', 'w'], 'production'], [['c', 'i', '"'], 'https://api.example.com'], [['d', 'i', '('], ''], [['c', 'i', 'w'], 'warning'], [['c', 'i', '('], 'smoke']]
   for (let index = 0; index < sequence.length; index += 1) { await perform(page, ...sequence[index]); await expect(page.getByTestId('feedback')).toContainText('Exercise complete'); await page.keyboard.press('Control+Enter') }
-  await expect(page.getByRole('heading', { name: 'Seven precise edits, done.' })).toBeVisible(); await expect(page.getByTestId('session-summary')).toHaveText('You completed every exercise.')
+  await expect(page.getByRole('heading', { name: 'Seven precise edits, done.' })).toBeVisible(); await expect(page.getByTestId('session-summary')).toHaveText('You completed every exercise.'); await expect(page.getByRole('button', { name: 'Continue to Target within a line' })).toBeVisible()
 })
 
 test('reset local progress requires confirmation and restarts the prescribed session', async ({ page }) => {
@@ -118,7 +157,7 @@ test('demonstration remains assisted exposure under the existing learner weights
 
 test('di( demonstration has exactly three keys and finishes in Normal mode', async ({ page }) => {
   await page.goto('./#/practice'); await page.evaluate(() => localStorage.setItem('vim-xp-progress', JSON.stringify({ schemaVersion: 2, curriculumVersion: '2.0.0', learner: { concepts: {}, attempts: [] }, recentVariants: [], session: { id: 'di-demo', exerciseIds: ['exercise.parens-clear-cache-args'], prescribed: false, createdAt: 1, seed: 1, index: 0, completed: false } }))); await page.reload(); await openDemonstration(page)
-  await expect(page.locator('.demo-timeline li')).toHaveCount(3); await expect(page.locator('.demo-timeline code')).toHaveCount(0); await expect(page.locator('.demo-timeline')).not.toContainText('Esc')
+  await expect(page.locator('.demo-timeline li')).toHaveCount(3); await expect(page.locator('.demo-timeline .step-token code')).toHaveCount(0); await expect(page.locator('.demo-timeline')).not.toContainText('Esc')
   for (let index = 0; index < 3; index += 1) await page.getByRole('button', { name: 'Next step' }).click()
   await expect(page.getByTestId('practice-mode')).toHaveText('normal'); expect(await documentText(page)).toBe('cache.invalidate();\nrefresh_view();\n'); await expect(page.getByText('Demonstration complete.', { exact: true })).toBeVisible()
 })
@@ -147,4 +186,13 @@ test('every catalog reference replays through the real Vim adapter and satisfies
     await expect(page.getByTestId('feedback')).toContainText('Exercise complete')
     if (id === 'exercise.parens-clear-cache-args') await expect(page.getByTestId('feedback')).toContainText('di(')
   }
+})
+
+test('all twelve line-targeting references replay through the pinned Vim adapter', async ({ page }) => {
+  const references: [string, string[]][] = [
+    ['exercise.line-find-assignment', ['f', '=']], ['exercise.line-find-cmake-paren', ['f', '(']], ['exercise.line-till-shell-quote', ['t', '"']], ['exercise.line-till-cpp-close-paren', ['t', ')']],
+    ['exercise.line-repeat-path-colon', ['f', ':', ';']], ['exercise.line-repeat-cpp-comma', ['f', ',', ';']], ['exercise.line-reverse-cpp-comma', ['f', ',', ';', ',']], ['exercise.line-reverse-shell-colon', ['f', ':', ';', ',']],
+    ['exercise.line-change-first-argument', ['c', 't', ',', 'replica', '<Esc>']], ['exercise.line-change-cmake-argument', ['c', 't', ')', 'exponential', '<Esc>']], ['exercise.line-change-shell-semicolon', ['c', 't', ';', 'production', '<Esc>']], ['exercise.line-delete-artifact', ['d', 'f', ' ']],
+  ]
+  for (const [id, tokens] of references) { await loadExercise(page, id, 'unit.line-targeting'); await replayTokens(page, tokens); await page.getByRole('button', { name: 'Check', exact: false }).click(); await expect(page.getByTestId('feedback'), id).toContainText('Exercise complete') }
 })

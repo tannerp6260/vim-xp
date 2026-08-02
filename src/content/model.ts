@@ -1,12 +1,14 @@
 export type ConceptId = `concept.${string}`
 export type ExerciseId = `exercise.${string}`
+export type UnitId = `unit.${string}`
 export type ContentVersion = `${number}.${number}.${number}`
 export type VimMode = 'normal' | 'insert' | 'visual'
 
 export type ExactDocumentRule = { type: 'exact-document'; text: string }
 export type RequiredModeRule = { type: 'required-mode'; mode: VimMode }
+export type CursorAtRule = { type: 'cursor-at'; offset: number }
 export type AllRule = { type: 'all'; rules: OutcomeRule[] }
-export type OutcomeRule = ExactDocumentRule | RequiredModeRule | AllRule
+export type OutcomeRule = ExactDocumentRule | RequiredModeRule | CursorAtRule | AllRule
 
 export type Concept = {
   id: ConceptId
@@ -62,4 +64,18 @@ export type Exercise = {
   role: 'introduction' | 'reinforcement' | 'transfer' | 'review'
 }
 
-export type Curriculum = { version: ContentVersion; concepts: Concept[]; exercises: Exercise[] }
+export type CurriculumUnit = {
+  id: UnitId
+  version: ContentVersion
+  order: number
+  title: string
+  summary: string
+  description: string
+  conceptIds: ConceptId[]
+  exerciseIds: ExerciseId[]
+  recommendedPrerequisiteUnitIds: UnitId[]
+  prescribedExerciseIds: ExerciseId[]
+  completionCopy?: string
+}
+
+export type Curriculum = { version: ContentVersion; concepts: Concept[]; exercises: Exercise[]; units: CurriculumUnit[] }

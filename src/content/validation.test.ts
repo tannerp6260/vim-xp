@@ -6,9 +6,9 @@ import { ContentValidationError, validateCurriculum, validateReferenceSolutions 
 const copy = () => structuredClone(curriculum) as Curriculum
 
 describe('content validation', () => {
-  it('accepts all nine complete exercise definitions', () => {
+  it('accepts all twenty-one complete exercise definitions', () => {
     const content = validateCurriculum(copy())
-    expect(content.exercises).toHaveLength(9)
+    expect(content.exercises).toHaveLength(21)
     for (const exercise of content.exercises) {
       expect(exercise.hints).toHaveLength(4)
       expect(exercise.primaryConcepts.length).toBeGreaterThan(0)
@@ -28,6 +28,23 @@ describe('content validation', () => {
     const content = copy(); content.exercises[0].primaryConcepts = ['concept.missing']
     expect(() => validateCurriculum(content)).toThrow(/unknown concept/)
   })
+
+  it('validates unit membership, ordering, references, and prescribed sessions', () => {
+    const content = validateCurriculum(copy()); expect(content.units.map((unit) => unit.id)).toEqual(['unit.precise-text-objects', 'unit.line-targeting'])
+    expect(content.units[0].exerciseIds).toHaveLength(9); expect(content.units[1].exerciseIds).toHaveLength(12)
+    expect(content.units[0].prescribedExerciseIds).toEqual(['exercise.change-inside-quotes', 'exercise.quotes-cmake-build-type', 'exercise.word-shell-target', 'exercise.quotes-shell-base-url', 'exercise.parens-clear-cache-args', 'exercise.word-cpp-log-level', 'exercise.parens-run-checks'])
+    expect(content.units[1].prescribedExerciseIds).toEqual(['exercise.line-find-assignment', 'exercise.line-till-shell-quote', 'exercise.line-find-cmake-paren', 'exercise.line-repeat-path-colon', 'exercise.line-change-first-argument', 'exercise.line-reverse-cpp-comma', 'exercise.line-change-shell-semicolon'])
+  })
+
+  it.each([
+    ['orphan', (content: Curriculum) => { content.units[0].exerciseIds.shift() }],
+    ['duplicate membership', (content: Curriculum) => { content.units[1].exerciseIds.push(content.units[0].exerciseIds[0]) }],
+    ['unknown unit exercise', (content: Curriculum) => { content.units[1].exerciseIds[0] = 'exercise.missing' }],
+    ['invalid prescribed member', (content: Curriculum) => { content.units[1].prescribedExerciseIds[0] = content.units[0].exerciseIds[0] }],
+    ['duplicate prescribed ID', (content: Curriculum) => { content.units[1].prescribedExerciseIds.push(content.units[1].prescribedExerciseIds[0]) }],
+  ])('rejects invalid unit graph content: %s', (_label, mutate) => { const content = copy(); mutate(content); expect(() => validateCurriculum(content)).toThrow(ContentValidationError) })
+
+  it('rejects prerequisite cycles', () => { const content = copy(); content.units[0].recommendedPrerequisiteUnitIds = ['unit.line-targeting']; expect(() => validateCurriculum(content)).toThrow(/cycle/) })
 
   it.each([
     ['cursor', (content: Curriculum) => { content.exercises[0].initial.cursor = -1 }],
@@ -63,12 +80,23 @@ describe('content validation', () => {
     expect(cmake.every((item) => !item.initial.document.includes(';'))).toBe(true)
   })
 
-  it('generates valid semantic demonstrations for all nine exercises', () => {
+  it('generates valid semantic demonstrations for every exercise', () => {
     for (const exercise of curriculum.exercises) {
       expect(exercise.demonstration.steps.length).toBeGreaterThan(0)
       const reference = exercise.referenceSolutions.find((item) => item.id === exercise.demonstration.referenceSolutionId)!
       expect(exercise.demonstration.steps.flatMap((step) => step.tokens)).toEqual(reference.tokens)
     }
+  })
+
+  it('defines all twelve line-targeting exercises with matching demonstration references', () => {
+    const exercises = curriculum.units[1].exerciseIds.map((id) => curriculum.exercises.find((exercise) => exercise.id === id)!)
+    expect(exercises).toHaveLength(12)
+    exercises.forEach((exercise) => expect(exercise.demonstration.steps.flatMap((step) => step.tokens)).toEqual(exercise.referenceSolutions[0].tokens))
+  })
+
+  it('labels the df Space demonstration as an actual Space target', () => {
+    const exercise = curriculum.exercises.find((item) => item.id === 'exercise.line-delete-artifact')!
+    expect(exercise.referenceSolutions[0].tokens).toEqual(['d', 'f', ' ']); expect(exercise.demonstration.steps.at(-1)).toMatchObject({ tokens: [' '], title: 'Find Space' })
   })
 
   it('keeps the di( demonstration to exactly three key steps', () => {
