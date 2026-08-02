@@ -10,7 +10,7 @@ function traceEquals(actual: string[], expected: string[]) {
 export function coachAttempt(exercise: Exercise, evaluation: EvaluationResult, trace: string[]): Coaching {
   if (!evaluation.passed) {
     const documentIssue = evaluation.issues.find((issue) => issue.type === 'document-mismatch')
-    if (documentIssue) return { kind: 'document', message: 'The environment value does not match the goal yet. Keep the surrounding quotation marks and change only the value.' }
+    if (documentIssue) return { kind: 'document', message: 'The document does not match the goal yet. Compare the target text and surrounding structure, then keep going.' }
     return { kind: 'mode', message: 'The text is correct. Press Escape to return to Normal mode, then check again.' }
   }
 

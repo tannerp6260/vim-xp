@@ -6,7 +6,18 @@ import { ContentValidationError, validateCurriculum, validateReferenceSolutions 
 const copy = () => structuredClone(curriculum) as Curriculum
 
 describe('content validation', () => {
-  it('accepts the first exercise content', () => expect(validateCurriculum(copy())).toBeTruthy())
+  it('accepts all nine complete exercise definitions', () => {
+    const content = validateCurriculum(copy())
+    expect(content.exercises).toHaveLength(9)
+    for (const exercise of content.exercises) {
+      expect(exercise.hints).toHaveLength(4)
+      expect(exercise.primaryConcepts.length).toBeGreaterThan(0)
+      expect(exercise.supportingConcepts.length).toBeGreaterThan(0)
+      expect(exercise.referenceSolutions.length).toBeGreaterThan(0)
+      expect(exercise.outcome.type).toBe('all')
+      expect(['introduction', 'reinforcement', 'transfer', 'review']).toContain(exercise.role)
+    }
+  })
 
   it('rejects duplicate IDs', () => {
     const content = copy(); content.exercises.push(structuredClone(content.exercises[0]))

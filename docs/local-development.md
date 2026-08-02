@@ -19,4 +19,6 @@ Commands:
 - `npm run preview`: serve the already-built artifact (normally at `http://localhost:4173`).
 - `npm run check`: lint, types, unit tests, build, then both browser projects.
 
+Practice progress is stored only in the browser under `vim-xp-progress`. Use “Reset local progress” and confirm when manually replaying the prescribed first session. Pure scheduler tests inject clocks and seeds and never depend on real time.
+
 To verify the exact production application, run `npm run build`, then `npm run preview`, and open the printed preview URL. Stop either server with Ctrl+C. See `troubleshooting.md` for browser and Node problems.

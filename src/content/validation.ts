@@ -1,5 +1,6 @@
 import type { Curriculum, Exercise, OutcomeRule } from './model'
 import { evaluateOutcome } from './evaluator'
+import { validateInlineMarkup } from './inlineMarkup'
 
 export class ContentValidationError extends Error {}
 
@@ -29,7 +30,9 @@ export function validateCurriculum(curriculum: Curriculum): Curriculum {
   const conceptIds = new Set(curriculum.concepts.map((concept) => concept.id))
   curriculum.exercises.forEach((exercise) => {
     assert(exercise.prompt.trim(), `${exercise.id} has an empty prompt`)
-    assert(exercise.hints.length > 0 && exercise.hints.every((hint) => hint.trim()), `${exercise.id} has an empty hint ladder`)
+    assert(exercise.variantGroupId.trim(), `${exercise.id} has no variant group`)
+    assert(exercise.hints.length === 4 && exercise.hints.every((hint) => hint.trim()), `${exercise.id} must have a four-step hint ladder`)
+    ;[exercise.title, exercise.prompt, ...exercise.hints, ...exercise.strategies.map((strategy) => strategy.coaching)].forEach(validateInlineMarkup)
     validatePosition(exercise.initial.cursor, exercise.initial.document, `${exercise.id} cursor`)
     if (exercise.initial.selection) {
       validatePosition(exercise.initial.selection.anchor, exercise.initial.document, `${exercise.id} selection anchor`)

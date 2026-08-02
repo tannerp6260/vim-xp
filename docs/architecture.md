@@ -1,12 +1,12 @@
 # Architecture
 
-## Current learning-loop checkpoint
+## Adaptive practice slice
 
-Hash routing selects the learner-facing `#/practice` screen by default and preserves the diagnostic `#/lab` screen without a routing dependency. `PracticeScreen` owns only the in-memory lifecycle and presentation. Framework-independent modules under `src/content` define versioned concepts and exercises, validate content, evaluate declarative outcomes, and produce post-correctness coaching. They do not import React, CodeMirror, or browser APIs.
+Hash routing selects `#/practice` by default and preserves `#/lab`. `PracticeScreen` orchestrates one finite session and exactly one active editor. Framework-independent `src/content` modules define curriculum, outcomes, coaching, and inline markup. `src/learning` contains learner updates, deterministic planning, and persistence boundaries. None imports React or CodeMirror.
 
 Correctness is computed from the final editor snapshot and a discriminated outcome-rule union. Trace-based strategy recognition runs only after correctness is known, so an unrecognized correct solution passes. Reference solutions remain executable Vim token sequences and must pass the same outcome rules through the real adapter.
 
-This checkpoint intentionally contains one exercise. It does not implement curriculum breadth, scheduling, persistence, placement, accounts, achievements, or adaptive behavior.
+The catalog contains nine variants around targeting quotes, words, and parenthesized arguments. A prescribed seven-exercise first session teaches and transfers those ideas; later sessions use learner evidence. Placement, accounts, synchronization, runtime AI, broad curriculum, timers, and social systems remain absent.
 
 ## Editor and diagnostic laboratory
 
@@ -20,6 +20,16 @@ Hash URLs remain suitable for the two static Pages routes. A later multi-screen 
 
 ## Intended boundaries
 
-Current layers are React shell → in-memory exercise lifecycle → thin editor adapter, alongside framework-independent validated content, evaluator, and coaching modules. Future learner model, scheduler, and persistence layers remain deliberately absent. Curriculum rules must not move into React or CodeMirror callbacks. Do not generalize the adapter ahead of evidenced exercise needs.
+Current layers are React session shell → persistence interface and pure planning/learning modules → validated content/evaluation/coaching, beside the thin editor adapter. Every transition recreates the editor so Vim state cannot leak.
+
+## Learner evidence and scheduling
+
+Each concept stores strength (observed reliability) separately from confidence (breadth and independence of evidence). Independent correct work raises both most. Hints, incorrect checks, and demonstrations reduce mastery weight but never change pass/fail. Demonstrations are assisted exposure; skips update recency and make work due without lowering strength. Response time is not collected. Due intervals are one, five, or fourteen days based on strength.
+
+The planner accepts a clock and seed. It prioritizes new, weak, and due concepts; strong work appears only as an infrequent confidence-building slow ball. It avoids adjacent variant groups, adjacent high-friction work, and same-concept resurfacing without two intervening exercises where possible. Deterministic fallbacks relax the concept gap, then friction/variant preferences, then select the highest-ranked remaining exercise.
+
+## Local persistence
+
+`vim-xp-progress` schema version 1 stores curriculum version, per-concept state, at most 100 compact attempts, session metadata, and at most 20 recent variants. Full keystroke traces are never stored. Malformed, old, or unavailable storage falls back to fresh progress. Reload resumes position but recreates the unfinished editor attempt. The interface permits future export/import without coupling React to `localStorage`.
 
 Known limitation: CMake and shell fixtures currently use plain-text highlighting because syntax color is irrelevant to the engine gate. This can be added independently later.

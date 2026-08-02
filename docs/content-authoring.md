@@ -1,10 +1,14 @@
 # Content authoring
 
-This repository currently contains one learning-loop checkpoint, not a complete curriculum or adaptive system. Content lives in framework-independent TypeScript under `src/content`; it must not import React, CodeMirror, or browser APIs.
+This repository contains a narrow nine-exercise cluster about precise operator and inner-text-object edits. Content lives in framework-independent TypeScript under `src/content`; it must not import React, CodeMirror, or browser APIs.
+
+## Inline command markup
+
+Wrap commands and literal target text in single backticks, for example ``Use `ciw` on `staging`.`` The parser produces text/code segments and React renders semantic `<code>`. This is not full Markdown. Empty spans and unmatched backticks fail validation. Continue using `<kbd>` in React for physical shortcuts such as Ctrl+Enter.
 
 ## Declarative format
 
-Each concept and exercise has a stable namespaced ID and semantic content version. An exercise declares its prompt, initial document/cursor/selection/language/mode, primary and supporting concepts, outcome, known strategies, ordered hints, executable reference solutions, and small difficulty metadata. Exercise definitions contain data, never arbitrary evaluator functions.
+Each concept and exercise has a stable namespaced ID and semantic content version. Exercises also declare a variant group, role, friction, prompt, initial state, exact outcome, known strategies, a four-step hint ladder, and executable references. Exercise definitions contain data, never evaluator functions.
 
 The currently supported outcome rules form a discriminated union:
 
@@ -35,5 +39,7 @@ Hints are ordered from conceptual guidance through command family and exact tech
 5. Add real-browser coverage that replays each reference solution through `VimEditorAdapter` and satisfies the declared outcome.
 6. Add alternative-solution coverage where the exercise names known strategies.
 7. Run `npm run check` and `git diff --check`.
+
+Choose a distinct variant group, realistic C++/CMake/shell fixture, valid cursor, exact final text plus Normal-mode outcome, and a replayable reference. Transfer prompts state only the goal; reserve commands for later hints. Update the prescribed sequence only when intentionally changing the teaching design.
 
 Never reject a correct final outcome because its trace differs from a reference solution, and never add an authoritative numerical efficiency score.
