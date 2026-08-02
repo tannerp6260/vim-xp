@@ -41,6 +41,15 @@ export function validateCurriculum(curriculum: Curriculum): Curriculum {
     ;[...exercise.primaryConcepts, ...exercise.supportingConcepts].forEach((id) => assert(conceptIds.has(id), `${exercise.id} references unknown concept ${id}`))
     validateRule(exercise.outcome, exercise.id)
     assert(exercise.referenceSolutions.length > 0 && exercise.referenceSolutions.every((solution) => solution.tokens.length > 0), `${exercise.id} has an empty reference solution`)
+    const steps = exercise.demonstration?.steps
+    assert(Array.isArray(steps) && steps.length > 0, `${exercise.id} must have a demonstration`)
+    assert(steps.every((step) => /^[a-z][a-z0-9-]*$/.test(step.id)), `${exercise.id} has an invalid demonstration step ID`)
+    assert(new Set(steps.map((step) => step.id)).size === steps.length, `${exercise.id} has duplicate demonstration step IDs`)
+    assert(steps.every((step) => step.tokens.length > 0 && step.tokens.every((token) => token.length > 0) && step.title.trim() && step.explanation.trim()), `${exercise.id} has an incomplete demonstration step`)
+    const reference = exercise.referenceSolutions.find((solution) => solution.id === exercise.demonstration.referenceSolutionId)
+    assert(reference, `${exercise.id} demonstration references an unknown solution`)
+    assert(steps.flatMap((step) => step.tokens).join('\u0000') === reference.tokens.join('\u0000'), `${exercise.id} demonstration tokens differ from its reference solution`)
+    steps.forEach((step) => { validateInlineMarkup(step.title); validateInlineMarkup(step.explanation) })
   })
   return curriculum
 }

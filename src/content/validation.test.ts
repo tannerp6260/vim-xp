@@ -62,4 +62,28 @@ describe('content validation', () => {
     expect(cmake.find((item) => item.id === 'exercise.parens-run-checks')!.initial.document).toBe('run_checks(unit integration)\nreport_results()\n')
     expect(cmake.every((item) => !item.initial.document.includes(';'))).toBe(true)
   })
+
+  it('generates valid semantic demonstrations for all nine exercises', () => {
+    for (const exercise of curriculum.exercises) {
+      expect(exercise.demonstration.steps.length).toBeGreaterThan(0)
+      const reference = exercise.referenceSolutions.find((item) => item.id === exercise.demonstration.referenceSolutionId)!
+      expect(exercise.demonstration.steps.flatMap((step) => step.tokens)).toEqual(reference.tokens)
+    }
+  })
+
+  it('keeps the di( demonstration to exactly three key steps', () => {
+    const exercise = curriculum.exercises.find((item) => item.id === 'exercise.parens-clear-cache-args')!
+    expect(exercise.demonstration.steps.map((step) => ({ tokens: step.tokens, display: step.display }))).toEqual([
+      { tokens: ['d'], display: 'key' }, { tokens: ['i'], display: 'key' }, { tokens: ['('], display: 'key' },
+    ])
+  })
+
+  it.each([
+    ['empty plan', (content: Curriculum) => { content.exercises[0].demonstration.steps = [] }],
+    ['duplicate step ID', (content: Curriculum) => { content.exercises[0].demonstration.steps[1].id = content.exercises[0].demonstration.steps[0].id }],
+    ['invalid step ID', (content: Curriculum) => { content.exercises[0].demonstration.steps[0].id = 'Bad ID' }],
+    ['empty tokens', (content: Curriculum) => { content.exercises[0].demonstration.steps[0].tokens = [] }],
+    ['empty explanation', (content: Curriculum) => { content.exercises[0].demonstration.steps[0].explanation = '' }],
+    ['reference drift', (content: Curriculum) => { content.exercises[0].demonstration.steps[0].tokens = ['x'] }],
+  ])('rejects demonstration %s', (_label, mutate) => { const content = copy(); mutate(content); expect(() => validateCurriculum(content)).toThrow(ContentValidationError) })
 })

@@ -13,6 +13,18 @@ function makeExercise(def: Definition): Exercise {
   const inserted = def.after
   const tokens = def.command === 'di(' ? ['d', 'i', '('] : [def.command[0], 'i', def.command[2] ?? 'w', inserted, '<Esc>']
   const technique = def.command === 'ci"' ? 'quoted value' : def.command === 'ciw' ? 'word' : 'parenthesized content'
+  const targetKey = def.command[2]
+  const targetTitle = targetKey === '"' ? 'Target inside double quotes' : targetKey === 'w' ? 'Target the inner word' : 'Target inside parentheses'
+  const targetExplanation = targetKey === '"' ? 'Apply the operator to the content inside the nearest double quotes.' : targetKey === 'w' ? 'Apply the operator to the word under the cursor.' : 'Apply the operator to the content inside the nearest parentheses.'
+  const demonstration: Exercise['demonstration'] = { referenceSolutionId: 'intended', steps: [
+    { id: 'operator', tokens: [def.command[0]], display: 'key', title: def.command[0] === 'd' ? 'Start the delete operator' : 'Start the change operator', explanation: `Press \`${def.command[0]}\`; Vim waits for a target.` },
+    { id: 'inner', tokens: ['i'], display: 'key', title: 'Choose the inner form', explanation: 'Press `i` to choose the inner form of a text object.' },
+    { id: 'target', tokens: [targetKey], display: 'key', title: targetTitle, explanation: targetExplanation },
+    ...(def.command === 'di(' ? [] : [
+      { id: 'replacement', tokens: [inserted], display: 'literal' as const, title: 'Type the replacement', explanation: `Insert the literal text \`${inserted}\`.` },
+      { id: 'normal-mode', tokens: ['<Esc>'], display: 'key' as const, title: 'Return to Normal mode', explanation: 'Press `Esc` to leave Insert mode and return to Normal mode.' },
+    ]),
+  ] }
   return {
     id: def.id, version: '1.0.0', variantGroupId: def.variant, title: def.title, prompt: def.prompt,
     initial: { document: def.initial, cursor, language: def.language, mode: 'normal' },
@@ -26,7 +38,7 @@ function makeExercise(def: Definition): Exercise {
       `Use \`${def.command}\` to target the ${technique}.`,
       `Watch a stepped replay of \`${def.command}${def.command === 'di(' ? '' : `${inserted}<Esc>`}\`, then reset and reproduce it.`,
     ],
-    referenceSolutions: [{ id: 'intended', tokens }], difficulty: { level: def.level, estimatedMinutes: 1 }, friction: def.friction, role: def.role,
+    referenceSolutions: [{ id: 'intended', tokens }], demonstration, difficulty: { level: def.level, estimatedMinutes: 1 }, friction: def.friction, role: def.role,
   }
 }
 
