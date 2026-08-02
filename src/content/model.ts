@@ -30,6 +30,19 @@ export type KnownStrategy = {
   coaching: string
 }
 
+export type DemonstrationStep = {
+  id: string
+  tokens: string[]
+  display: 'key' | 'literal'
+  title: string
+  explanation: string
+}
+
+export type Demonstration = {
+  referenceSolutionId: string
+  steps: DemonstrationStep[]
+}
+
 export type Exercise = {
   id: ExerciseId
   version: ContentVersion
@@ -43,6 +56,7 @@ export type Exercise = {
   strategies: KnownStrategy[]
   hints: string[]
   referenceSolutions: { id: string; tokens: string[] }[]
+  demonstration: Demonstration
   difficulty: { level: 1 | 2 | 3 | 4 | 5; estimatedMinutes: number }
   friction: 'low' | 'medium' | 'high'
   role: 'introduction' | 'reinforcement' | 'transfer' | 'review'

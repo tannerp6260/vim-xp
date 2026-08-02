@@ -24,7 +24,11 @@ The outcome evaluator decides correctness from observed document and mode state.
 
 ## Hint ladders and demonstrations
 
-Hints are ordered from conceptual guidance through command family and exact technique to an optional demonstration. They are learner-controlled and non-punitive. A demonstration resets the editor, replays a reference solution visibly, and asks the learner to reset and reproduce it; watching does not count as independent completion.
+Hints are ordered from conceptual guidance through command family and exact technique to an optional demonstration. They are learner-controlled and non-punitive. Opening a demonstration does not execute it. Manual Next is the default; autoplay is optional. Executing the first step marks the attempt as demonstrated, so later correct reproduction remains assisted exposure rather than independent mastery.
+
+Every exercise declares `demonstration.referenceSolutionId` and one or more ordered steps. Each step has a stable lowercase-hyphenated ID, nonempty tokens, a `key` or `literal` display category, title, and explanation. Concatenated step tokens must exactly equal the selected executable reference. Current change demonstrations separate operator, inner form, target, replacement literal, and Escape. The `di(` demonstration contains only `d`, `i`, and `(`.
+
+Validation rejects missing plans, invalid or duplicate step IDs, empty tokens/copy, unknown references, and token drift. Keep long inserted literals as one semantic step. Explanations describe Vim meaning; observable effects are not authored because the player derives them from real editor snapshots.
 
 Resetting an exercise preserves hints already requested and demonstration-viewed evidence for that attempt. Resetting all local progress cancels any active replay and clears every transient assistance, feedback, and editor state.
 
@@ -37,10 +41,11 @@ Resetting an exercise preserves hints already requested and demonstration-viewed
 1. Add or reuse versioned concepts with stable IDs.
 2. Define the exercise as declarative data and use only supported outcome rules.
 3. Provide a progressive hint ladder and at least one executable reference solution.
-4. Add evaluator and validation unit coverage for any new rule or content shape.
-5. Add real-browser coverage that replays each reference solution through `VimEditorAdapter` and satisfies the declared outcome.
-6. Add alternative-solution coverage where the exercise names known strategies.
-7. Run `npm run check` and `git diff --check`.
+4. Provide a semantic demonstration plan tied exactly to one executable reference solution.
+5. Add evaluator and validation unit coverage for any new rule or content shape.
+6. Add real-browser coverage that replays each reference solution through `VimEditorAdapter` and satisfies the declared outcome.
+7. Add alternative-solution coverage where the exercise names known strategies.
+8. Run `npm run check` and `git diff --check`.
 
 Choose a distinct variant group, realistic C++/CMake/shell fixture, valid cursor, exact final text plus Normal-mode outcome, and a replayable reference. Transfer prompts state only the goal; reserve commands for later hints. Update the prescribed sequence only when intentionally changing the teaching design.
 

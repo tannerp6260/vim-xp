@@ -4,6 +4,8 @@ An early client-side Vim apprenticeship built on CodeMirror 6 + `@replit/codemir
 
 Progress stays in versioned browser-local storage. There are no accounts, backend, telemetry, runtime AI, timers, leaderboards, or broad Vim compatibility claims.
 
+Hint 4 can open an explainable demonstration: step manually through each Vim idea, optionally autoplay it, inspect effects derived from real editor state, then reset and reproduce the edit.
+
 The feasibility conclusion is **Suitable with bounded limitations**. The validated Vim adapter is pinned exactly at `@replit/codemirror-vim` 6.4.0. Chrome manual checks confirmed Ctrl-R redo, Ctrl-A increment, Ctrl-F forward movement in a sufficiently long document, around text objects, synchronized automated/stepped replay, and full reset. Ctrl-W closes the browser tab, is explicitly unsupported, and must not be taught as working in the browser. Firefox has automated Playwright coverage, but no manual Firefox pass is claimed.
 
 Known architectural limits are package-global registers, marks, macros, search state, and related Vim state; reset isolation depends on the internal-looking `resetVimGlobalState_` compatibility hook; and the prototype supports one active Vim editor. The current production bundle-size warning is accepted for the diagnostic prototype and deferred until product development. See the evidence matrix for details.
