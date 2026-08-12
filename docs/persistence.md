@@ -5,3 +5,7 @@ Browser-local key `vim-xp-progress` uses schema version 3 with curriculum versio
 The schema-2/curriculum-2.0.0 migration is deterministic and idempotent. It preserves valid concept state, attempts, timestamps, recent variants, session ID, queue, index, completion state, seed, and creation time, then identifies that session as `unit.precise-text-objects`. New Unit 2 concepts remain absent and therefore New. Bounds are applied without duplicating attempts.
 
 Malformed nested concept or attempt data, unknown versions, impossible indexes, and unknown exercise or unit IDs fail safely to fresh progress. Unavailable storage also falls back without blocking practice. Reset local progress intentionally removes all state. Future content additions should preserve stable IDs and add an explicit migration whenever a version change would otherwise invalidate compatible evidence.
+
+Schema 4/curriculum 4.0.0 accepts both schema 2/curriculum 2.0.0 and schema 3/curriculum 3.0.0. Both preserve bounded evidence, attempts, variants, and current/completed session identity, queue, index, unit, seed, and timestamps; schema 2 maps sessions to Unit 1 and schema 3 gains no placement by default.
+
+Only the latest placement run is stored: format version, ID/status/timestamps, current gate, compact results, recommendation, and evidence-applied flag. Full traces, editor text, durations, and per-key timing are never stored. Placement probes are not ordinary attempts. Malformed placement falls back safely; reset clears practice and placement.

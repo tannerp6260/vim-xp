@@ -30,6 +30,7 @@ export type KnownStrategy = {
   label: string
   trace: string[]
   coaching: string
+  creditedConceptIds: ConceptId[]
 }
 
 export type DemonstrationStep = {
@@ -78,4 +79,15 @@ export type CurriculumUnit = {
   completionCopy?: string
 }
 
-export type Curriculum = { version: ContentVersion; concepts: Concept[]; exercises: Exercise[]; units: CurriculumUnit[] }
+export type PlacementGate = {
+  id: `gate.${string}`
+  unitId: UnitId
+  exerciseId: ExerciseId
+  conceptIds: ConceptId[]
+  acceptedStrategyIds: string[]
+  role: 'required' | 'confirmation'
+  priority: number
+  requiredToSkipIntroduction: boolean
+}
+
+export type Curriculum = { version: ContentVersion; concepts: Concept[]; exercises: Exercise[]; units: CurriculumUnit[]; placementGates: PlacementGate[] }

@@ -17,8 +17,8 @@ async function loadExercise(page: Page, exerciseId: string, unitId?: string) {
 }
 async function replayTokens(page: Page, tokens: string[]) { for (const token of tokens) { if (token === '<Esc>') await page.keyboard.press('Escape'); else if (token.length === 1) await page.keyboard.press(token === ' ' ? 'Space' : token); else await page.keyboard.type(token) } }
 
-test('default and direct routes load practice under the Pages-style base path', async ({ page }) => {
-  await page.goto('./'); await expect(page).toHaveURL(/\/vim-xp\/#\/practice$/); await expect(page.getByText('1 of 7')).toBeVisible()
+test('fresh root opens welcome while direct practice remains compatible under the Pages-style base path', async ({ page }) => {
+  await page.goto('./'); await expect(page).toHaveURL(/\/vim-xp\/#\/welcome$/); await expect(page.getByRole('heading', { name: /Build precise Vim habits/ })).toBeVisible()
   await page.goto('./#/practice'); expect(new URL(page.url()).pathname).toBe('/vim-xp/'); await expect(editor(page)).toBeVisible()
 })
 
@@ -56,7 +56,7 @@ test('df Space is displayed semantically and passes through the real adapter', a
 
 test('a realistic schema 2 payload migrates with learner evidence and its session intact', async ({ page }) => {
   await page.goto('./#/practice'); await page.evaluate(() => localStorage.setItem('vim-xp-progress', JSON.stringify({ schemaVersion: 2, curriculumVersion: '2.0.0', learner: { concepts: { 'concept.inner-quotes': { strength: .44, confidence: .31, successes: 2, exposures: 3, variants: ['quotes-environment'], lastSeenAt: 100, dueAt: 200, recentExerciseIds: ['exercise.change-inside-quotes'] } }, attempts: [{ sessionId: 'legacy', exerciseId: 'exercise.change-inside-quotes', conceptIds: ['concept.inner-quotes'], correct: true, incorrectChecks: 0, hintLevel: 0, demonstrated: false, skipped: false, completedAt: 100 }] }, recentVariants: ['quotes-environment'], session: { id: 'legacy', exerciseIds: ['exercise.change-inside-quotes', 'exercise.quotes-cmake-build-type'], prescribed: true, createdAt: 1, seed: 1, index: 1, completed: false } }))); await page.reload(); await expect(page.getByText('2 of 2')).toBeVisible()
-  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('vim-xp-progress')!)); expect(stored).toMatchObject({ schemaVersion: 3, curriculumVersion: '3.0.0', session: { id: 'legacy', index: 1, unitId: 'unit.precise-text-objects' }, learner: { concepts: { 'concept.inner-quotes': { strength: .44, confidence: .31 } } } })
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('vim-xp-progress')!)); expect(stored).toMatchObject({ schemaVersion: 4, curriculumVersion: '4.0.0', session: { id: 'legacy', index: 1, unitId: 'unit.precise-text-objects' }, learner: { concepts: { 'concept.inner-quotes': { strength: .44, confidence: .31 } } } })
 })
 
 test('renders semantic command markup without raw backticks', async ({ page }) => {

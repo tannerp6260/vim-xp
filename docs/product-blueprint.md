@@ -11,3 +11,5 @@ The MVP is static and local-first: no backend, accounts, runtime AI, paid API, h
 Domain logic must remain framework-independent. Exercise outcomes will be declarative and validated. Correct final state is authoritative when strategy recognition is uncertain. Every future reference solution must replay from the initial state and satisfy its outcome rule.
 
 The engine gate promises fidelity only for taught behavior. If clean reset, observation, or central taught behavior requires extensive patches, reconsider the engine before product construction. Do not claim complete Vim/Neovim compatibility.
+
+Experienced users may optionally demonstrate a starting point in about five untimed editing tasks. Placement skips introductions only when recognized strategies confirm every required capability. Correct alternatives remain correct without invented technique credit. It seeds provisional Familiar evidence and recommends Unit 1, Unit 2, or mixed adaptive review; it never claims mastery.

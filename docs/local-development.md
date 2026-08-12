@@ -24,3 +24,5 @@ Practice progress is stored only in the browser under `vim-xp-progress`. Use “
 To verify the exact production application, run `npm run build`, then `npm run preview`, and open the printed preview URL. Stop either server with Ctrl+C. See `troubleshooting.md` for browser and Node problems.
 
 For the Pages base path, run `VITE_BASE_PATH=/vim-xp/ VITE_OUT_DIR=dist/vim-xp npm run build`, then `python -m http.server 4173 --bind 127.0.0.1 --directory dist`. Review `http://127.0.0.1:4173/vim-xp/#/curriculum`, `#/practice`, and `#/lab`. Reset local progress before checking Unit 1; start Unit 2 from Curriculum to review its prescribed sequence.
+
+Also review `#/welcome` and `#/placement`: five- and six-probe runs, repeated movement without attribution, “I don’t know,” refresh/resume, unfinished-session preservation, both migrations, reset, and the narrowest supported desktop width.

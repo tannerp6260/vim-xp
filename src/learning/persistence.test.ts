@@ -22,13 +22,14 @@ describe('progress persistence', () => {
     const oldSession = { ...session }; delete (oldSession as Partial<typeof session>).unitId
     const attempt = { sessionId: 'session-1', exerciseId: ids[0], conceptIds: ['concept.inner-quotes' as const], correct: true, incorrectChecks: 0, hintLevel: 0, demonstrated: false, skipped: false, completedAt: 77 }
     const legacy = { schemaVersion: 2, curriculumVersion: '2.0.0', learner: { concepts: { 'concept.inner-quotes': { strength: .4, confidence: .3, successes: 2, exposures: 3, variants: ['quotes-a'], lastSeenAt: 77, dueAt: 88, recentExerciseIds: [ids[0]] } }, attempts: [attempt] }, session: oldSession, recentVariants: ['quotes-a'] }
-    const migrated = migrateProgress(legacy, '3.0.0', [...ids], [...units]); expect(migrated).toMatchObject({ schemaVersion: 3, curriculumVersion: '3.0.0', session: { id: 'session-1', index: 0, unitId: units[0] }, learner: { concepts: { 'concept.inner-quotes': { strength: .4, confidence: .3, dueAt: 88 } }, attempts: [attempt] }, recentVariants: ['quotes-a'] })
+    const migrated = migrateProgress(legacy, '3.0.0', [...ids], [...units]); expect(migrated).toMatchObject({ schemaVersion: 4, curriculumVersion: '3.0.0', session: { id: 'session-1', index: 0, unitId: units[0] }, learner: { concepts: { 'concept.inner-quotes': { strength: .4, confidence: .3, dueAt: 88 } }, attempts: [attempt] }, recentVariants: ['quotes-a'] })
     expect(migrateProgress(migrated, '3.0.0', [...ids], [...units])).toEqual(migrated)
   })
   it('rejects malformed schema 2 nested state and enforces bounds during migration', () => {
     const invalid = { schemaVersion: 2, curriculumVersion: '2.0.0', learner: { concepts: { bad: { strength: 'high' } }, attempts: [] }, recentVariants: [] }
     expect(migrateProgress(invalid, '3.0.0', [...ids], [...units])).toEqual(freshProgress('3.0.0'))
   })
+  it('migrates schema 3 without inventing placement or changing its session', () => { const legacy = { ...freshProgress('3.0.0'), schemaVersion: 3, session }; const migrated = migrateProgress(legacy, '4.0.0', [...ids], [...units]); expect(migrated).toMatchObject({ schemaVersion: 4, curriculumVersion: '4.0.0', session }); expect(migrated.placement).toBeUndefined() })
   it('bounds migrated attempt and recent-variant history without duplication', () => {
     const attempt = (index: number) => ({ sessionId: 'legacy', exerciseId: ids[0], conceptIds: ['concept.inner-quotes' as const], correct: true, incorrectChecks: 0, hintLevel: 0, demonstrated: false, skipped: false, completedAt: index })
     const legacy = { schemaVersion: 2, curriculumVersion: '2.0.0', learner: { concepts: {}, attempts: Array.from({ length: 120 }, (_, index) => attempt(index)) }, recentVariants: Array.from({ length: 25 }, (_, index) => `variant-${index}`) }

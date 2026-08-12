@@ -1,11 +1,8 @@
 import type { Exercise } from './model'
 import type { EvaluationResult } from './evaluator'
+import { recognizeStrategy } from './strategy'
 
 export type Coaching = { kind: 'success' | 'document' | 'mode' | 'cursor'; strategyId?: string; message: string }
-
-function traceEquals(actual: string[], expected: string[]) {
-  return actual.length === expected.length && actual.every((token, index) => token === expected[index])
-}
 
 export function coachAttempt(exercise: Exercise, evaluation: EvaluationResult, trace: string[]): Coaching {
   if (!evaluation.passed) {
@@ -16,7 +13,7 @@ export function coachAttempt(exercise: Exercise, evaluation: EvaluationResult, t
     return { kind: 'mode', message: 'The outcome is correct except for the mode. Press Escape to return to Normal mode, then check again.' }
   }
 
-  const strategy = exercise.strategies.find((candidate) => traceEquals(trace, candidate.trace))
+  const strategy = recognizeStrategy(exercise, trace)
   if (strategy) return { kind: 'success', strategyId: strategy.id, message: strategy.coaching }
   return { kind: 'success', message: 'Correct — the requested editor outcome matches the goal. Vim often has several valid ways to get there.' }
 }

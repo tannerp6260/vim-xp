@@ -46,7 +46,7 @@ function makeExercise(def: Definition): Exercise {
     initial: { document: def.initial, cursor, language: def.language, mode: 'normal' },
     primaryConcepts: [def.primary], supportingConcepts: def.supporting,
     outcome: { type: 'all', rules: [{ type: 'exact-document', text: def.final }, { type: 'cursor-at', offset: def.finalCursor }, { type: 'required-mode', mode: 'normal' }] },
-    strategies: [{ id: 'intended', label: def.tokens.join(''), trace: def.tokens.flatMap((token) => token.startsWith('<') ? [token] : [...token]), coaching: `Correct. \`${def.tokens.join('').replace('<Esc>', '<Esc>')}\` reached the requested outcome while preserving the surrounding line.` }],
+    strategies: [{ id: 'intended', label: def.tokens.join(''), trace: def.tokens.flatMap((token) => token.startsWith('<') ? [token] : [...token]), coaching: `Correct. \`${def.tokens.join('').replace('<Esc>', '<Esc>')}\` reached the requested outcome while preserving the surrounding line.`, creditedConceptIds: [def.primary, ...def.supporting] }],
     hints: def.hints, referenceSolutions: [{ id: 'intended', tokens: def.tokens }],
     demonstration: { referenceSolutionId: 'intended', steps: def.steps },
     difficulty: { level: def.level, estimatedMinutes: 1 }, friction: def.friction, role: def.role,

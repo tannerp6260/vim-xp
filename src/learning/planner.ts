@@ -1,5 +1,6 @@
 import type { Curriculum, Exercise, ExerciseId, UnitId } from '../content/model'
 import type { LearnerState } from './learnerModel'
+import { placementRecommendation, type PlacementRecommendation, type PlacementRun } from './placement'
 
 export type Clock = { now(): number }
 export type SessionPlan = { id: string; exerciseIds: ExerciseId[]; prescribed: boolean; createdAt: number; seed: number; unitId?: UnitId }
@@ -24,11 +25,18 @@ export function recommendedUnitId(curriculum: Curriculum, learner: LearnerState)
   return units.find((unit) => !encountered(curriculum, learner, unit.id))?.id ?? units.at(-1)!.id
 }
 
-export function planSession(curriculum: Curriculum, learner: LearnerState, clock: Clock, seed: number, firstSession: boolean, recentVariants: string[] = [], focusedUnitId?: UnitId): SessionPlan {
+export function recommendNext(curriculum: Curriculum, learner: LearnerState, placement?: PlacementRun): PlacementRecommendation {
+  if (placement?.status === 'completed') return placementRecommendation(curriculum, learner, placement)
+  const unitId = recommendedUnitId(curriculum, learner)
+  const allStrong = curriculum.units.every((unit) => unit.conceptIds.some((id) => { const state = learner.concepts[id]; return state && state.strength >= .8 && state.confidence >= .55 }))
+  return allStrong ? { kind: 'adaptive-review', reason: 'Your evidence supports mixed review across both units.' } : { kind: 'unit', unitId, reason: 'Continue with the next unit in the curriculum.' }
+}
+
+export function planSession(curriculum: Curriculum, learner: LearnerState, clock: Clock, seed: number, firstSession: boolean, recentVariants: string[] = [], focusedUnitId?: UnitId, skipPrescribed = false): SessionPlan {
   const now = clock.now()
   const ordered = [...curriculum.units].sort((a, b) => a.order - b.order)
   const focus = focusedUnitId ? curriculum.units.find((unit) => unit.id === focusedUnitId) : undefined
-  const prescribedUnit = firstSession ? ordered[0] : focus && !encountered(curriculum, learner, focus.id) ? focus : undefined
+  const prescribedUnit = firstSession ? ordered[0] : focus && !skipPrescribed && !encountered(curriculum, learner, focus.id) ? focus : undefined
   if (prescribedUnit) return { id: `session-${now}-${seed}`, exerciseIds: [...prescribedUnit.prescribedExerciseIds], prescribed: true, createdAt: now, seed, unitId: prescribedUnit.id }
   const rand = random(seed)
   const focusIds = new Set(focus?.exerciseIds ?? curriculum.exercises.map((exercise) => exercise.id))

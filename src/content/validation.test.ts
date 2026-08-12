@@ -36,6 +36,15 @@ describe('content validation', () => {
     expect(content.units[1].prescribedExerciseIds).toEqual(['exercise.line-find-assignment', 'exercise.line-till-shell-quote', 'exercise.line-find-cmake-paren', 'exercise.line-repeat-path-colon', 'exercise.line-change-first-argument', 'exercise.line-reverse-cpp-comma', 'exercise.line-change-shell-semicolon'])
   })
 
+  it('validates the deterministic placement blueprint', () => { const gates = validateCurriculum(copy()).placementGates; expect(gates).toHaveLength(6); expect(gates.map((gate) => gate.priority)).toEqual([1, 2, 3, 4, 5, 6]); expect(gates.filter((gate) => gate.role === 'required')).toHaveLength(5) })
+
+  it.each([
+    ['unit', (content: Curriculum) => { content.placementGates[0].unitId = 'unit.missing' }],
+    ['exercise', (content: Curriculum) => { content.placementGates[0].exerciseId = 'exercise.missing' }],
+    ['strategy', (content: Curriculum) => { content.placementGates[0].acceptedStrategyIds = ['missing'] }],
+    ['concept', (content: Curriculum) => { content.placementGates[0].conceptIds = ['concept.missing'] }],
+  ])('rejects a placement gate with unknown %s', (_label, mutate) => { const content = copy(); mutate(content); expect(() => validateCurriculum(content)).toThrow(ContentValidationError) })
+
   it.each([
     ['orphan', (content: Curriculum) => { content.units[0].exerciseIds.shift() }],
     ['duplicate membership', (content: Curriculum) => { content.units[1].exerciseIds.push(content.units[0].exerciseIds[0]) }],

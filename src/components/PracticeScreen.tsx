@@ -7,7 +7,7 @@ import type { Exercise } from '../content/model'
 import type { EditorSnapshot, VimEditorAdapter } from '../editor/VimEditorAdapter'
 import { learnerLabel, updateLearner } from '../learning/learnerModel'
 import { createProgressStore, freshProgress, type StoredProgress } from '../learning/persistence'
-import { planSession, recommendedUnitId } from '../learning/planner'
+import { planSession, recommendNext } from '../learning/planner'
 import { VimEditor } from './VimEditor'
 import { DemonstrationPlayer } from './DemonstrationPlayer'
 import { ProductNav } from './ProductNav'
@@ -20,12 +20,14 @@ const initialSnapshot = (exercise: Exercise): EditorSnapshot => ({ document: exe
 
 export function PracticeScreen() {
   const [renderNow] = useState(() => Date.now())
-  const store = useMemo(() => createProgressStore(typeof localStorage === 'undefined' ? undefined : localStorage, curriculum.version, curriculum.exercises.map((item) => item.id), curriculum.units.map((unit) => unit.id)), [])
+  const store = useMemo(() => createProgressStore(typeof localStorage === 'undefined' ? undefined : localStorage, curriculum.version, curriculum.exercises.map((item) => item.id), curriculum.units.map((unit) => unit.id), curriculum.placementGates.map((gate) => gate.id)), [])
   const [progress, setProgress] = useState<StoredProgress>(() => {
     const loaded = store.load()
     if (loaded.session && !loaded.session.completed) return loaded
-    const focus = loaded.learner.attempts.length === 0 ? undefined : recommendedUnitId(curriculum, loaded.learner)
-    const session = planSession(curriculum, loaded.learner, { now: Date.now }, Date.now() >>> 0, loaded.learner.attempts.length === 0, loaded.recentVariants, focus)
+    const recommendation = recommendNext(curriculum, loaded.learner, loaded.placement)
+    const genuinelyFresh = loaded.learner.attempts.length === 0 && !loaded.placement
+    const focus = recommendation.kind === 'unit' ? recommendation.unitId : undefined
+    const session = planSession(curriculum, loaded.learner, { now: Date.now }, Date.now() >>> 0, genuinelyFresh, loaded.recentVariants, focus, recommendation.kind === 'adaptive-review')
     return { ...loaded, session: { ...session, index: 0, completed: false } }
   })
   const session = progress.session!
@@ -80,8 +82,8 @@ export function PracticeScreen() {
     const attempts = progress.learner.attempts.filter((attempt) => attempt.sessionId === session.id); const skipped = attempts.filter((attempt) => attempt.skipped).length; const completed = attempts.filter((attempt) => attempt.correct && !attempt.skipped).length; const allCompleted = completed === session.exerciseIds.length
     const unit = session.unitId ? getUnit(session.unitId) : undefined; const textObjectsOnly = unit?.id === 'unit.precise-text-objects' || session.exerciseIds.every((id) => unitForExercise(id)?.id === 'unit.precise-text-objects')
     const heading = allCompleted && session.exerciseIds.length === 7 && textObjectsOnly ? 'Seven precise edits, done.' : 'Session complete'
-    const recommended = recommendedUnitId(curriculum, progress.learner); const nextUnit = recommended !== unit?.id ? getUnit(recommended) : undefined
-    return <main className="practice-screen completion-screen"><ProductNav onReset={resetProgress} busy={false} /><section className="completion-card"><p className="lesson-label">{unit?.title ?? 'Adaptive practice'} complete</p><h1>{heading}</h1><p data-testid="session-summary">{allCompleted ? 'You completed every exercise.' : `${completed} completed · ${skipped} skipped`}</p>{completed > 0 && <p>{textObjectsOnly ? 'You practiced targeting quoted values, words, and content inside parentheses across C++, CMake, and shell.' : 'You practiced precise movement and edits within realistic C++, CMake, and shell lines.'}</p>}<ul>{concepts.map((id) => { const concept = curriculum.concepts.find((item) => item.id === id)!; return <li key={id}><strong>{concept.title}</strong><span>{learnerLabel(progress.learner.concepts[id], renderNow)}</span></li> })}</ul><div className="completion-actions"><button className="primary" onClick={() => anotherSession(nextUnit?.id ?? unit?.id)}>{nextUnit ? `Continue to ${nextUnit.title}` : 'Practice another adaptive session'}</button><a href="#/curriculum">View curriculum</a></div></section></main>
+    const recommended = recommendNext(curriculum, progress.learner, progress.placement); const nextUnit = recommended.kind === 'unit' && recommended.unitId !== unit?.id ? getUnit(recommended.unitId) : undefined
+    return <main className="practice-screen completion-screen"><ProductNav onReset={resetProgress} busy={false} /><section className="completion-card"><p className="lesson-label">{unit?.title ?? 'Adaptive practice'} complete</p><h1>{heading}</h1><p data-testid="session-summary">{allCompleted ? 'You completed every exercise.' : `${completed} completed · ${skipped} skipped`}</p>{completed > 0 && <p>{textObjectsOnly ? 'You practiced targeting quoted values, words, and content inside parentheses across C++, CMake, and shell.' : 'You practiced precise movement and edits within realistic C++, CMake, and shell lines.'}</p>}<ul>{concepts.map((id) => { const concept = curriculum.concepts.find((item) => item.id === id)!; return <li key={id}><strong>{concept.title}</strong><span>{learnerLabel(progress.learner.concepts[id], renderNow)}</span></li> })}</ul><div className="completion-actions"><button className="primary" onClick={() => anotherSession(recommended.kind === 'unit' ? recommended.unitId : undefined)}>{nextUnit ? `Continue to ${nextUnit.title}` : 'Practice another adaptive session'}</button><a href="#/curriculum">View curriculum</a></div></section></main>
   }
 
   const stateLabel = learnerLabel(progress.learner.concepts[exercise.primaryConcepts[0]], renderNow)
