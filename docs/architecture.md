@@ -43,3 +43,7 @@ Each unit introduction is a fixed teaching sequence. Evidence is gathered during
 Session completion counts compact attempts associated with that session ID. Only seven successful exercises earn “Seven precise edits, done”; mixed or all-skipped sessions report neutral completed/skipped counts.
 
 Known limitation: CMake and shell fixtures currently use plain-text highlighting because syntax color is irrelevant to the engine gate. This can be added independently later.
+
+## Evidence-based placement
+
+Fresh roots open `#/welcome`; existing progress bypasses it, and all direct hash routes remain compatible. `#/placement` reuses the outcome evaluator and real editor. Pure strategy recognition, gate planning, evidence application, and recommendations remain outside React. Gates name existing exercises, accepted strategies, and explicitly demonstrated concepts. Placement results stay separate from practice attempts. The deterministic machine normally runs five required gates and adds one Unit 1 confirmation only when its required results split.

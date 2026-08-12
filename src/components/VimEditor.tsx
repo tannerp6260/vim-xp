@@ -5,11 +5,11 @@ export function VimEditor({ initial, generation, adapterRef, onChange }: { initi
   const host = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!host.current) return
-    const adapter = new VimEditorAdapter(host.current, initial)
+    const adapter = new VimEditorAdapter(host.current, { text: initial.text, cursor: initial.cursor, selection: initial.selection, language: initial.language })
     adapterRef.current = adapter
     const unsubscribe = adapter.subscribe(onChange)
     adapter.focus()
     return () => { unsubscribe(); adapter.destroy(); if (adapterRef.current === adapter) adapterRef.current = null }
-  }, [initial, generation, adapterRef, onChange])
+  }, [initial.text, initial.cursor, initial.selection, initial.language, generation, adapterRef, onChange])
   return <div className="editor" data-testid="vim-editor" ref={host} />
 }

@@ -40,6 +40,7 @@ export function validateCurriculum(curriculum: Curriculum): Curriculum {
       validatePosition(exercise.initial.selection.head, exercise.initial.document, `${exercise.id} selection head`)
     }
     ;[...exercise.primaryConcepts, ...exercise.supportingConcepts].forEach((id) => assert(conceptIds.has(id), `${exercise.id} references unknown concept ${id}`))
+    exercise.strategies.forEach((strategy) => { assert(strategy.id.trim() && strategy.trace.length > 0, `${exercise.id} has an invalid strategy`); assert(strategy.creditedConceptIds.length > 0, `${exercise.id} strategy ${strategy.id} credits no concepts`); strategy.creditedConceptIds.forEach((id) => assert(conceptIds.has(id), `${exercise.id} strategy ${strategy.id} references invalid concept ${id}`)) })
     validateRule(exercise.outcome, exercise.id)
     const cursorRules = exercise.outcome.type === 'all' ? exercise.outcome.rules.filter((rule) => rule.type === 'cursor-at') : exercise.outcome.type === 'cursor-at' ? [exercise.outcome] : []
     cursorRules.forEach((rule) => assert(rule.offset < exercise.initial.document.length || (rule.offset === 0 && exercise.initial.document.length === 0), `${exercise.id} cursor outcome is outside its declared document`))
@@ -70,6 +71,15 @@ export function validateCurriculum(curriculum: Curriculum): Curriculum {
     unit.prescribedExerciseIds.forEach((id) => assert(unit.exerciseIds.includes(id), `${unit.id} prescribed exercise ${id} is not a member`))
   })
   curriculum.exercises.forEach((exercise) => assert(membership.has(exercise.id), `${exercise.id} is orphaned from curriculum units`))
+  assert(Array.isArray(curriculum.placementGates), 'Curriculum requires placement gates')
+  assert(new Set(curriculum.placementGates.map((gate) => gate.id)).size === curriculum.placementGates.length, 'Placement gate IDs must be unique')
+  assert(new Set(curriculum.placementGates.map((gate) => gate.exerciseId)).size === curriculum.placementGates.length, 'Placement gate exercises must be unique')
+  assert(new Set(curriculum.placementGates.map((gate) => gate.priority)).size === curriculum.placementGates.length, 'Placement priorities must be unique')
+  curriculum.placementGates.forEach((gate) => { const unit = curriculum.units.find((item) => item.id === gate.unitId); const exercise = curriculum.exercises.find((item) => item.id === gate.exerciseId); assert(/^gate\.[a-z0-9-]+$/.test(gate.id), `Invalid placement gate ID ${gate.id}`); assert(unit, `${gate.id} references unknown unit ${gate.unitId}`); assert(exercise, `${gate.id} references unknown exercise ${gate.exerciseId}`); assert(unit.exerciseIds.includes(gate.exerciseId), `${gate.id} exercise is not in its unit`); gate.acceptedStrategyIds.forEach((id) => assert(exercise.strategies.some((strategy) => strategy.id === id), `${gate.id} references unknown strategy ${id}`)); gate.conceptIds.forEach((id) => assert(unit.conceptIds.includes(id) && [...exercise.primaryConcepts, ...exercise.supportingConcepts].includes(id), `${gate.id} references invalid concept ${id}`)); assert(gate.acceptedStrategyIds.some((id) => { const strategy = exercise.strategies.find((item) => item.id === id)!; return gate.conceptIds.every((concept) => strategy.creditedConceptIds.includes(concept)) }), `${gate.id} has no strategy crediting its concepts`) })
+  curriculum.units.forEach((unit) => assert(curriculum.placementGates.some((gate) => gate.unitId === unit.id && gate.role === 'required'), `${unit.id} has no required placement gate`))
+  const orderedGates = [...curriculum.placementGates].sort((a, b) => a.priority - b.priority)
+  assert(orderedGates.every((gate, index) => gate.priority === index + 1), 'Placement sequence must be contiguous and deterministic')
+  assert(orderedGates.filter((gate) => gate.role === 'confirmation').every((gate) => gate.priority > orderedGates.filter((item) => item.role === 'required').length), 'Optional confirmation gate is unreachable')
   const visiting = new Set<string>(); const visited = new Set<string>()
   const visit = (id: string) => { if (visiting.has(id)) throw new ContentValidationError('Unit prerequisite relationships contain a cycle'); if (visited.has(id)) return; visiting.add(id); curriculum.units.find((unit) => unit.id === id)!.recommendedPrerequisiteUnitIds.forEach(visit); visiting.delete(id); visited.add(id) }
   curriculum.units.forEach((unit) => visit(unit.id))

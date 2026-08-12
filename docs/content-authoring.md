@@ -54,3 +54,7 @@ Resetting an exercise preserves hints already requested and demonstration-viewed
 Choose a distinct variant group, realistic C++/CMake/shell fixture, valid cursor, exact final text plus Normal-mode outcome, and a replayable reference. Transfer prompts state only the goal; reserve commands for later hints. Update the prescribed sequence only when intentionally changing the teaching design.
 
 Never reject a correct final outcome because its trace differs from a reference solution, and never add an authoritative numerical efficiency score.
+
+## Placement gates
+
+Every strategy declares `creditedConceptIds`; never infer concepts from its label or command. A gate declares a stable ID, owning unit, existing exercise, assessed concepts, accepted strategies, role, priority, and skip requirement. Validation rejects unknown references, wrong membership, duplicates, missing required unit gates, non-contiguous order, and unreachable confirmations. Later units should reuse catalog exercises, add a required gate, and ensure an accepted strategy explicitly credits every assessed concept.

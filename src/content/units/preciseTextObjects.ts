@@ -30,7 +30,7 @@ function makeExercise(def: Definition): Exercise {
     primaryConcepts: [def.command === 'ciw' ? 'concept.inner-word' : def.command.includes('(') ? 'concept.inner-parentheses' : 'concept.inner-quotes'],
     supportingConcepts: [def.command.startsWith('d') ? 'concept.delete-operator' : 'concept.change-operator', 'concept.normal-mode'],
     outcome: { type: 'all', rules: [{ type: 'exact-document', text: final }, { type: 'required-mode', mode: 'normal' }] },
-    strategies: [{ id: def.command, label: def.command, trace: tokens.flatMap((token) => token.length > 1 && !token.startsWith('<') ? [...token] : [token]), coaching: `Nicely done. \`${def.command}\` targets the inner ${technique} while preserving its surrounding structure.` }],
+    strategies: [{ id: def.command, label: def.command, trace: tokens.flatMap((token) => token.length > 1 && !token.startsWith('<') ? [...token] : [token]), coaching: `Nicely done. \`${def.command}\` targets the inner ${technique} while preserving its surrounding structure.`, creditedConceptIds: [def.command === 'ciw' ? 'concept.inner-word' : def.command.includes('(') ? 'concept.inner-parentheses' : 'concept.inner-quotes', def.command.startsWith('d') ? 'concept.delete-operator' : 'concept.change-operator', 'concept.normal-mode'] }],
     hints: [
       'Look for the smallest meaningful text object that contains only what should change.',
       `Combine an operator with an inner ${technique} target.`,
@@ -57,7 +57,7 @@ export const exercises = definitions.map(makeExercise)
 export const changeInsideQuotesExercise = exercises[0]
 changeInsideQuotesExercise.strategies = [
   { ...changeInsideQuotesExercise.strategies[0], id: 'change-inner-quotes' },
-  { id: 'delete-inner-then-insert', label: 'Delete inside quotes, then insert', trace: ['d', 'i', '"', 'i', ...'production', '<Esc>'], coaching: 'Correct. You deleted inside the quotes and inserted the replacement. Another useful option is `ci"`, which combines those steps.' },
+  { id: 'delete-inner-then-insert', label: 'Delete inside quotes, then insert', trace: ['d', 'i', '"', 'i', ...'production', '<Esc>'], coaching: 'Correct. You deleted inside the quotes and inserted the replacement. Another useful option is `ci"`, which combines those steps.', creditedConceptIds: ['concept.inner-quotes', 'concept.delete-operator', 'concept.normal-mode'] },
 ]
 export const initialDocument = changeInsideQuotesExercise.initial.document
 export const finalDocument = initialDocument.replace('staging', 'production')
