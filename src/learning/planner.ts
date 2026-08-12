@@ -29,7 +29,7 @@ export function recommendNext(curriculum: Curriculum, learner: LearnerState, pla
   if (placement?.status === 'completed') return placementRecommendation(curriculum, learner, placement)
   const unitId = recommendedUnitId(curriculum, learner)
   const allStrong = curriculum.units.every((unit) => unit.conceptIds.some((id) => { const state = learner.concepts[id]; return state && state.strength >= .8 && state.confidence >= .55 }))
-  return allStrong ? { kind: 'adaptive-review', reason: 'Your evidence supports mixed review across both units.' } : { kind: 'unit', unitId, reason: 'Continue with the next unit in the curriculum.' }
+  return allStrong ? { kind: 'adaptive-review', reason: 'Your evidence supports mixed review across the curriculum.' } : { kind: 'unit', unitId, reason: 'Continue with the next unit in the curriculum.' }
 }
 
 export function planSession(curriculum: Curriculum, learner: LearnerState, clock: Clock, seed: number, firstSession: boolean, recentVariants: string[] = [], focusedUnitId?: UnitId, skipPrescribed = false): SessionPlan {
@@ -44,13 +44,17 @@ export function planSession(curriculum: Curriculum, learner: LearnerState, clock
   const pool = focus ? curriculum.exercises.filter((exercise) => focusIds.has(exercise.id) || reviewIds.has(exercise.id)) : curriculum.exercises
   const ranked = pool.map((exercise) => ({ exercise, score: score(exercise, learner, now, rand(), recentVariants) + (focusIds.has(exercise.id) ? 18 : 0) })).sort((a, b) => b.score - a.score || a.exercise.id.localeCompare(b.exercise.id))
   const result: Exercise[] = []
+  const unitByExercise = new Map(curriculum.units.flatMap((unit) => unit.exerciseIds.map((id) => [id, unit.id] as const)))
   while (result.length < Math.min(7, pool.length)) {
     const focusCount = result.filter((exercise) => focusIds.has(exercise.id)).length
     const reviewCount = result.length - focusCount
     const eligible = ranked.filter(({ exercise }) => !result.includes(exercise) && (!focus || (focusIds.has(exercise.id) ? focusCount < 5 || reviewIds.size === 0 : reviewCount < 2)))
     const previous = result.at(-1)
-    const choice = eligible.find(({ exercise }) => exercise.variantGroupId !== previous?.variantGroupId && !(exercise.friction === 'high' && previous?.friction === 'high') && !result.slice(-2).some((item) => item.primaryConcepts[0] === exercise.primaryConcepts[0]))
-      ?? eligible.find(({ exercise }) => exercise.variantGroupId !== previous?.variantGroupId && !(exercise.friction === 'high' && previous?.friction === 'high')) ?? eligible[0]
+    const representedUnits = new Set(result.map((exercise) => unitByExercise.get(exercise.id)))
+    const breadthEligible = !focus && representedUnits.size < curriculum.units.length ? eligible.filter(({ exercise }) => !representedUnits.has(unitByExercise.get(exercise.id))) : eligible
+    const candidates = breadthEligible.length > 0 ? breadthEligible : eligible
+    const choice = candidates.find(({ exercise }) => exercise.variantGroupId !== previous?.variantGroupId && !(exercise.friction === 'high' && previous?.friction === 'high') && !result.slice(-2).some((item) => item.primaryConcepts[0] === exercise.primaryConcepts[0]))
+      ?? candidates.find(({ exercise }) => exercise.variantGroupId !== previous?.variantGroupId && !(exercise.friction === 'high' && previous?.friction === 'high')) ?? candidates[0]
     if (!choice) break
     result.push(choice.exercise)
   }

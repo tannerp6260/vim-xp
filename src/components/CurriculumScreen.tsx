@@ -26,7 +26,7 @@ export function CurriculumScreen() {
   const unfinished = progress.session && !progress.session.completed
   const start = (unitId: UnitId) => {
     if (unfinished && progress.session?.unitId !== unitId && !window.confirm(`Replace your unfinished ${getUnit(progress.session?.unitId ?? '')?.title ?? 'practice'} session? Completed and skipped attempts will remain saved.`)) return
-    const startedAt = timestamp(); const plan = planSession(curriculum, progress.learner, { now: () => startedAt }, (startedAt + progress.learner.attempts.length) >>> 0, false, progress.recentVariants, unitId)
+    const startedAt = timestamp(); const gates = curriculum.placementGates.filter((gate) => gate.unitId === unitId && gate.requiredToSkipIntroduction); const skipPrescribed = gates.length > 0 && gates.every((gate) => gateConfirmed(gate, progress.placement, progress.learner)); const plan = planSession(curriculum, progress.learner, { now: () => startedAt }, (startedAt + progress.learner.attempts.length) >>> 0, false, progress.recentVariants, unitId, skipPrescribed)
     store.save({ ...progress, session: { ...plan, index: 0, completed: false } }); navigateToPractice()
   }
   return <main className="curriculum-screen"><ProductNav /><header><p className="lesson-label">Small, deliberate curriculum</p><h1>Choose what to practice</h1><p>Units are recommended in order, but never locked. Progress reflects learner evidence, not a completion percentage.</p><p><a className="button-link" href="#/placement">{progress.placement ? (progress.placement.status === 'active' ? 'Resume placement' : 'Retake placement') : 'Find my starting point'}</a></p><p>{recommended.reason}</p></header>

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { curriculum } from '../../src/content/curriculum'
 
 const editor = (page: Page) => page.locator('.practice-card .cm-content')
 const documentText = (page: Page) => editor(page).locator('.cm-line').allTextContents().then((lines) => lines.join('\n'))
@@ -15,7 +16,8 @@ async function expectStableResetAndCleanAttempt(page: Page, initialText: string)
 async function loadExercise(page: Page, exerciseId: string, unitId?: string) {
   await page.goto('./#/practice'); await page.evaluate(({ exerciseId, unitId }) => localStorage.setItem('vim-xp-progress', JSON.stringify({ schemaVersion: 3, curriculumVersion: '3.0.0', learner: { concepts: {}, attempts: [] }, recentVariants: [], session: { id: `test-${exerciseId}`, exerciseIds: [exerciseId], prescribed: false, createdAt: 1, seed: 1, index: 0, completed: false, ...(unitId ? { unitId } : {}) } })), { exerciseId, unitId }); await page.reload(); await expect(editor(page)).toBeVisible()
 }
-async function replayTokens(page: Page, tokens: string[]) { for (const token of tokens) { if (token === '<Esc>') await page.keyboard.press('Escape'); else if (token.length === 1) await page.keyboard.press(token === ' ' ? 'Space' : token); else await page.keyboard.type(token) } }
+async function replayTokens(page: Page, tokens: string[]) { for (const token of tokens) { if (token === '<Esc>') await page.keyboard.press('Escape'); else if (token === '<Enter>') await page.keyboard.press('Enter'); else if (token.length === 1) await page.keyboard.press(token === ' ' ? 'Space' : token); else await page.keyboard.type(token); if (token === '/' || token === '?') await expect(page.locator('.practice-card .cm-editor input')).toBeFocused(); if (token === '<Enter>') await expect(page.locator('.practice-card .cm-content')).toBeFocused(); if (token === '<Esc>') await expect(page.getByTestId('practice-mode')).toHaveText('normal') } }
+async function domCursor(page: Page) { return page.evaluate(() => { const selection = window.getSelection(); const line = selection?.focusNode?.parentElement?.closest('.cm-line'); const lines = [...document.querySelectorAll('.practice-card .cm-line')]; return line ? lines.slice(0, lines.indexOf(line)).reduce((sum, item) => sum + (item.textContent?.length ?? 0) + 1, 0) + (selection?.focusOffset ?? 0) : -1 }) }
 
 test('fresh root opens welcome while direct practice remains compatible under the Pages-style base path', async ({ page }) => {
   await page.goto('./'); await expect(page).toHaveURL(/\/vim-xp\/#\/welcome$/); await expect(page.getByRole('heading', { name: /Build precise Vim habits/ })).toBeVisible()
@@ -24,15 +26,21 @@ test('fresh root opens welcome while direct practice remains compatible under th
 
 test('the diagnostic lab remains available', async ({ page }) => { await page.goto('./#/lab'); await expect(page.getByRole('heading', { name: 'CodeMirror Vim feasibility laboratory' })).toBeVisible() })
 
-test('curriculum overview lists both advisory units and supports direct refresh', async ({ page }) => {
-  await page.goto('./#/curriculum'); await expect(page).toHaveURL(/\/vim-xp\/#\/curriculum$/); await expect(page.getByRole('heading', { name: 'Choose what to practice' })).toBeVisible(); await expect(page.locator('[data-unit-id]')).toHaveCount(2)
-  await expect(page.getByRole('heading', { name: 'Precise text objects' })).toBeVisible(); await expect(page.getByRole('heading', { name: 'Target within a line' })).toBeVisible(); await expect(page.getByText(/You can start here now/)).toBeVisible(); await page.reload(); await expect(page.locator('[data-unit-id="unit.line-targeting"]')).toBeVisible()
+test('curriculum overview lists all advisory units and supports direct refresh', async ({ page }) => {
+  await page.goto('./#/curriculum'); await expect(page).toHaveURL(/\/vim-xp\/#\/curriculum$/); await expect(page.getByRole('heading', { name: 'Choose what to practice' })).toBeVisible(); await expect(page.locator('[data-unit-id]')).toHaveCount(4)
+  await expect(page.getByRole('heading', { name: 'Precise text objects' })).toBeVisible(); await expect(page.getByRole('heading', { name: 'Target within a line' })).toBeVisible(); await expect(page.getByText(/You can start here now/).first()).toBeVisible(); await page.reload(); await expect(page.locator('[data-unit-id="unit.line-targeting"]')).toBeVisible()
 })
 
 test('advanced learners can start unit two and replacing another unfinished unit requires confirmation', async ({ page }) => {
   await page.goto('./#/curriculum'); await page.locator('[data-unit-id="unit.line-targeting"]').getByRole('button', { name: 'Begin unit' }).click(); await expect(page.getByText('Target within a line session')).toBeVisible(); await expect(page.getByRole('heading', { name: 'Land on the assignment' })).toBeVisible()
   await page.goto('./#/curriculum'); page.once('dialog', (dialog) => dialog.dismiss()); await page.locator('[data-unit-id="unit.precise-text-objects"]').getByRole('button').click(); await expect(page).toHaveURL(/#\/curriculum$/)
   page.once('dialog', (dialog) => dialog.accept()); await page.locator('[data-unit-id="unit.precise-text-objects"]').getByRole('button').click(); await expect(page.getByRole('heading', { name: 'Change inside quotes' })).toBeVisible()
+})
+
+test('Units 3 and 4 begin with their seven-exercise prescribed introductions', async ({ page }) => {
+  for (const [unitId, title] of [['unit.move-and-repeat', 'Move to the next setting'], ['unit.search-and-act', 'Find the worker configuration']] as const) {
+    await page.goto('./#/curriculum'); await page.evaluate(() => localStorage.clear()); await page.reload(); await page.locator(`[data-unit-id="${unitId}"]`).getByRole('button', { name: 'Begin unit' }).click(); await expect(page.getByRole('heading', { name: title })).toBeVisible(); const session = await page.evaluate(() => JSON.parse(localStorage.getItem('vim-xp-progress')!).session); expect(session).toMatchObject({ unitId, prescribed: true }); expect(session.exerciseIds).toHaveLength(7)
+  }
 })
 
 test('later line-targeting focus includes prior-unit review', async ({ page }) => {
@@ -56,7 +64,7 @@ test('df Space is displayed semantically and passes through the real adapter', a
 
 test('a realistic schema 2 payload migrates with learner evidence and its session intact', async ({ page }) => {
   await page.goto('./#/practice'); await page.evaluate(() => localStorage.setItem('vim-xp-progress', JSON.stringify({ schemaVersion: 2, curriculumVersion: '2.0.0', learner: { concepts: { 'concept.inner-quotes': { strength: .44, confidence: .31, successes: 2, exposures: 3, variants: ['quotes-environment'], lastSeenAt: 100, dueAt: 200, recentExerciseIds: ['exercise.change-inside-quotes'] } }, attempts: [{ sessionId: 'legacy', exerciseId: 'exercise.change-inside-quotes', conceptIds: ['concept.inner-quotes'], correct: true, incorrectChecks: 0, hintLevel: 0, demonstrated: false, skipped: false, completedAt: 100 }] }, recentVariants: ['quotes-environment'], session: { id: 'legacy', exerciseIds: ['exercise.change-inside-quotes', 'exercise.quotes-cmake-build-type'], prescribed: true, createdAt: 1, seed: 1, index: 1, completed: false } }))); await page.reload(); await expect(page.getByText('2 of 2')).toBeVisible()
-  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('vim-xp-progress')!)); expect(stored).toMatchObject({ schemaVersion: 4, curriculumVersion: '4.0.0', session: { id: 'legacy', index: 1, unitId: 'unit.precise-text-objects' }, learner: { concepts: { 'concept.inner-quotes': { strength: .44, confidence: .31 } } } })
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('vim-xp-progress')!)); expect(stored).toMatchObject({ schemaVersion: 5, curriculumVersion: '5.0.0', session: { id: 'legacy', index: 1, unitId: 'unit.precise-text-objects' }, learner: { concepts: { 'concept.inner-quotes': { strength: .44, confidence: .31 } } } })
 })
 
 test('renders semantic command markup without raw backticks', async ({ page }) => {
@@ -195,4 +203,14 @@ test('all twelve line-targeting references replay through the pinned Vim adapter
     ['exercise.line-change-first-argument', ['c', 't', ',', 'replica', '<Esc>']], ['exercise.line-change-cmake-argument', ['c', 't', ')', 'exponential', '<Esc>']], ['exercise.line-change-shell-semicolon', ['c', 't', ';', 'production', '<Esc>']], ['exercise.line-delete-artifact', ['d', 'f', ' ']],
   ]
   for (const [id, tokens] of references) { await loadExercise(page, id, 'unit.line-targeting'); await replayTokens(page, tokens); await page.getByRole('button', { name: 'Check', exact: false }).click(); await expect(page.getByTestId('feedback'), id).toContainText('Exercise complete') }
+})
+
+test('all move-and-repeat references replay through the pinned Vim adapter', async ({ page }) => {
+  const ids = ['exercise.move-word-cpp-next', 'exercise.move-word-shell-back', 'exercise.move-word-cmake-end', 'exercise.repeat-cpp-log-levels', 'exercise.repeat-shell-modes', 'exercise.repeat-cmake-features', 'exercise.repeat-cpp-arguments', 'exercise.move-word-shell-end', 'exercise.repeat-cmake-targets', 'exercise.move-word-cpp-back']
+  for (const id of ids) { const exercise = curriculum.exercises.find((item) => item.id === id)!; await loadExercise(page, id, 'unit.move-and-repeat'); await replayTokens(page, exercise.referenceSolutions[0].tokens); await page.getByRole('button', { name: 'Check', exact: false }).click(); await expect(page.getByTestId('feedback'), `${id} cursor ${await domCursor(page)}`).toContainText('Exercise complete') }
+})
+
+test('all search-and-act references replay through the pinned Vim adapter', async ({ page }) => {
+  const ids = ['exercise.search-cpp-worker', 'exercise.search-shell-next-service', 'exercise.search-cmake-previous-target', 'exercise.search-shell-backward-mode', 'exercise.search-act-cpp-staging', 'exercise.search-act-cmake-off', 'exercise.search-act-shell-hosts', 'exercise.search-cpp-third-retry', 'exercise.search-cmake-return-library', 'exercise.search-act-cpp-flags']
+  for (const id of ids) { const exercise = curriculum.exercises.find((item) => item.id === id)!; await loadExercise(page, id, 'unit.search-and-act'); await replayTokens(page, exercise.referenceSolutions[0].tokens); await page.getByRole('button', { name: 'Check', exact: false }).click(); await expect(page.getByTestId('feedback'), `${id} cursor ${await domCursor(page)}`).toContainText('Exercise complete') }
 })

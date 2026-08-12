@@ -23,6 +23,6 @@ Practice progress is stored only in the browser under `vim-xp-progress`. Use “
 
 To verify the exact production application, run `npm run build`, then `npm run preview`, and open the printed preview URL. Stop either server with Ctrl+C. See `troubleshooting.md` for browser and Node problems.
 
-For the Pages base path, run `VITE_BASE_PATH=/vim-xp/ VITE_OUT_DIR=dist/vim-xp npm run build`, then `python -m http.server 4173 --bind 127.0.0.1 --directory dist`. Review `http://127.0.0.1:4173/vim-xp/#/curriculum`, `#/practice`, and `#/lab`. Reset local progress before checking Unit 1; start Unit 2 from Curriculum to review its prescribed sequence.
+For the Pages base path, run `VITE_BASE_PATH=/vim-xp/ VITE_OUT_DIR=dist/vim-xp npm run build`, then `python -m http.server 4173 --bind 127.0.0.1 --directory dist`. Review `http://127.0.0.1:4173/vim-xp/#/curriculum`, `#/practice`, `#/placement`, and `#/lab`. Reset local progress before checking Unit 1; begin Units 2–4 from Curriculum to review their prescribed sequences. Verify `/`, `n`, counts, and dot repeat in both browser projects; `?`, `N`, `*`, and `#` remain unverified curriculum capabilities.
 
-Also review `#/welcome` and `#/placement`: five- and six-probe runs, repeated movement without attribution, “I don’t know,” refresh/resume, unfinished-session preservation, both migrations, reset, and the narrowest supported desktop width.
+Also review `#/welcome` and `#/placement`: seven- and eight-probe runs, repeated movement without attribution, “I don’t know,” refresh/resume, unfinished-session preservation, all three legacy migrations, reset, and the narrowest supported desktop width.

@@ -6,9 +6,9 @@ import { ContentValidationError, validateCurriculum, validateReferenceSolutions 
 const copy = () => structuredClone(curriculum) as Curriculum
 
 describe('content validation', () => {
-  it('accepts all twenty-one complete exercise definitions', () => {
+  it('accepts all forty-one complete exercise definitions', () => {
     const content = validateCurriculum(copy())
-    expect(content.exercises).toHaveLength(21)
+    expect(content.exercises).toHaveLength(41)
     for (const exercise of content.exercises) {
       expect(exercise.hints).toHaveLength(4)
       expect(exercise.primaryConcepts.length).toBeGreaterThan(0)
@@ -30,13 +30,14 @@ describe('content validation', () => {
   })
 
   it('validates unit membership, ordering, references, and prescribed sessions', () => {
-    const content = validateCurriculum(copy()); expect(content.units.map((unit) => unit.id)).toEqual(['unit.precise-text-objects', 'unit.line-targeting'])
-    expect(content.units[0].exerciseIds).toHaveLength(9); expect(content.units[1].exerciseIds).toHaveLength(12)
+    const content = validateCurriculum(copy()); expect(content.units.map((unit) => unit.id)).toEqual(['unit.precise-text-objects', 'unit.line-targeting', 'unit.move-and-repeat', 'unit.search-and-act'])
+    expect(content.units.map((unit) => unit.exerciseIds.length)).toEqual([9, 12, 10, 10])
     expect(content.units[0].prescribedExerciseIds).toEqual(['exercise.change-inside-quotes', 'exercise.quotes-cmake-build-type', 'exercise.word-shell-target', 'exercise.quotes-shell-base-url', 'exercise.parens-clear-cache-args', 'exercise.word-cpp-log-level', 'exercise.parens-run-checks'])
     expect(content.units[1].prescribedExerciseIds).toEqual(['exercise.line-find-assignment', 'exercise.line-till-shell-quote', 'exercise.line-find-cmake-paren', 'exercise.line-repeat-path-colon', 'exercise.line-change-first-argument', 'exercise.line-reverse-cpp-comma', 'exercise.line-change-shell-semicolon'])
+    expect(content.units[2].prescribedExerciseIds).toHaveLength(7); expect(content.units[3].prescribedExerciseIds).toHaveLength(7)
   })
 
-  it('validates the deterministic placement blueprint', () => { const gates = validateCurriculum(copy()).placementGates; expect(gates).toHaveLength(6); expect(gates.map((gate) => gate.priority)).toEqual([1, 2, 3, 4, 5, 6]); expect(gates.filter((gate) => gate.role === 'required')).toHaveLength(5) })
+  it('validates the deterministic placement blueprint', () => { const gates = validateCurriculum(copy()).placementGates; expect(gates).toHaveLength(8); expect(gates.map((gate) => gate.priority)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]); expect(gates.filter((gate) => gate.role === 'required')).toHaveLength(7) })
 
   it.each([
     ['unit', (content: Curriculum) => { content.placementGates[0].unitId = 'unit.missing' }],
