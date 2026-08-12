@@ -3,7 +3,7 @@ import { emptyLearnerState, type AttemptEvidence, type LearnerState } from './le
 import type { SessionPlan } from './planner'
 import { PLACEMENT_FORMAT_VERSION, type PlacementRecommendation, type PlacementResult, type PlacementRun } from './placement'
 
-export const STORAGE_SCHEMA_VERSION = 4
+export const STORAGE_SCHEMA_VERSION = 5
 export const STORAGE_KEY = 'vim-xp-progress'
 export type StoredSession = SessionPlan & { index: number; completed: boolean }
 export type StoredProgress = { schemaVersion: number; curriculumVersion: string; learner: LearnerState; session?: StoredSession; placement?: PlacementRun; recentVariants: string[] }
@@ -42,7 +42,8 @@ export function createProgressStore(storage: KeyValueStorage | undefined, curric
         const value = storage.getItem(STORAGE_KEY)
         if (!value) return freshProgress(curriculumVersion)
         const raw = JSON.parse(value) as Partial<StoredProgress>
-        const parsed = (raw.schemaVersion === 2 && raw.curriculumVersion === '2.0.0') || (raw.schemaVersion === 3 && raw.curriculumVersion === '3.0.0') ? migrateProgress(raw, curriculumVersion, exerciseIds, unitIds) : raw
+        const legacy = (raw.schemaVersion === 2 && raw.curriculumVersion === '2.0.0') || (raw.schemaVersion === 3 && raw.curriculumVersion === '3.0.0') || (raw.schemaVersion === 4 && raw.curriculumVersion === '4.0.0')
+        const parsed = legacy ? migrateProgress(raw, curriculumVersion, exerciseIds, unitIds, placementGateIds) : raw
         if (parsed.schemaVersion !== STORAGE_SCHEMA_VERSION || parsed.curriculumVersion !== curriculumVersion || !parsed.learner || !parsed.learner.concepts || typeof parsed.learner.concepts !== 'object' || Array.isArray(parsed.learner.concepts) || !Array.isArray(parsed.learner.attempts) || !strings(parsed.recentVariants)) return freshProgress(curriculumVersion)
         if (Object.values(parsed.learner.concepts).some((state) => !validConceptState(state)) || parsed.learner.attempts.some((attempt) => !validAttempt(attempt, validIds)) || (parsed.session !== undefined && !validSession(parsed.session, validIds, validUnitIds)) || (parsed.placement !== undefined && !validPlacement(parsed.placement, validIds, validUnitIds, gateIds))) return freshProgress(curriculumVersion)
         return { schemaVersion: STORAGE_SCHEMA_VERSION, curriculumVersion, learner: { concepts: parsed.learner.concepts, attempts: parsed.learner.attempts.slice(-100) }, session: parsed.session, placement: parsed.placement, recentVariants: parsed.recentVariants.slice(-20) }
@@ -53,15 +54,20 @@ export function createProgressStore(storage: KeyValueStorage | undefined, curric
   }
 }
 
-export function migrateProgress(legacy: unknown, curriculumVersion: string, exerciseIds: ExerciseId[] = [], unitIds: UnitId[] = []): StoredProgress {
+export function migrateProgress(legacy: unknown, curriculumVersion: string, exerciseIds: ExerciseId[] = [], unitIds: UnitId[] = [], placementGateIds: string[] = []): StoredProgress {
   if (!legacy || typeof legacy !== 'object') return freshProgress(curriculumVersion)
   const parsed = legacy as Partial<StoredProgress>
   if (parsed.schemaVersion === STORAGE_SCHEMA_VERSION && parsed.curriculumVersion === curriculumVersion) return parsed as StoredProgress
-  const from2 = parsed.schemaVersion === 2 && parsed.curriculumVersion === '2.0.0'; const from3 = parsed.schemaVersion === 3 && parsed.curriculumVersion === '3.0.0'
-  if ((!from2 && !from3) || !parsed.learner || !parsed.learner.concepts || typeof parsed.learner.concepts !== 'object' || Array.isArray(parsed.learner.concepts) || !Array.isArray(parsed.learner.attempts) || !strings(parsed.recentVariants)) return freshProgress(curriculumVersion)
-  const validIds = new Set<string>(exerciseIds); const validUnitIds = new Set<string>(unitIds)
+  const from2 = parsed.schemaVersion === 2 && parsed.curriculumVersion === '2.0.0'; const from3 = parsed.schemaVersion === 3 && parsed.curriculumVersion === '3.0.0'; const from4 = parsed.schemaVersion === 4 && parsed.curriculumVersion === '4.0.0'
+  if ((!from2 && !from3 && !from4) || !parsed.learner || !parsed.learner.concepts || typeof parsed.learner.concepts !== 'object' || Array.isArray(parsed.learner.concepts) || !Array.isArray(parsed.learner.attempts) || !strings(parsed.recentVariants)) return freshProgress(curriculumVersion)
+  const validIds = new Set<string>(exerciseIds); const validUnitIds = new Set<string>(unitIds); const gateIds = new Set(placementGateIds)
   if (Object.values(parsed.learner.concepts).some((state) => !validConceptState(state)) || parsed.learner.attempts.some((attempt) => !validAttempt(attempt, validIds)) || (parsed.session !== undefined && !validSession(parsed.session, validIds, validUnitIds, from2))) return freshProgress(curriculumVersion)
   const session = parsed.session ? { ...parsed.session, unitId: from2 ? 'unit.precise-text-objects' as UnitId : parsed.session.unitId } : undefined
   if (session && validUnitIds.size > 0 && !validUnitIds.has(session.unitId!)) return freshProgress(curriculumVersion)
-  return { schemaVersion: STORAGE_SCHEMA_VERSION, curriculumVersion, learner: { concepts: parsed.learner.concepts, attempts: parsed.learner.attempts.slice(-100) }, session, recentVariants: parsed.recentVariants.slice(-20) }
+  if (from4 && parsed.placement !== undefined && !validPlacement(parsed.placement, validIds, validUnitIds, gateIds)) return freshProgress(curriculumVersion)
+  const placement = from4 && parsed.placement ? {
+    ...parsed.placement,
+    recommendation: parsed.placement.status === 'completed' ? { kind: 'unit' as const, unitId: 'unit.move-and-repeat' as UnitId, reason: 'Continue with Move and repeat, the earliest unit this earlier placement did not assess.' } : undefined,
+  } : undefined
+  return { schemaVersion: STORAGE_SCHEMA_VERSION, curriculumVersion, learner: { concepts: parsed.learner.concepts, attempts: parsed.learner.attempts.slice(-100) }, session, placement, recentVariants: parsed.recentVariants.slice(-20) }
 }

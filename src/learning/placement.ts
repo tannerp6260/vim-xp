@@ -27,9 +27,9 @@ export function nextPlacementGate(curriculum: Curriculum, run: PlacementRun): Pl
 export function placementRecommendation(curriculum: Curriculum, learner: LearnerState, run?: PlacementRun): PlacementRecommendation {
   const ordered = [...curriculum.units].sort((a, b) => a.order - b.order)
   const confirmed = (unitId: UnitId) => curriculum.placementGates.filter((gate) => gate.unitId === unitId && gate.requiredToSkipIntroduction).every((gate) => gateConfirmed(gate, run, learner))
-  if (!confirmed(ordered[0].id)) return { kind: 'unit', unitId: ordered[0].id, reason: 'Start with the techniques placement could not yet confirm.' }
-  if (!confirmed(ordered[1].id)) return { kind: 'unit', unitId: ordered[1].id, reason: 'Your text-object foundation is confirmed; continue with line targeting.' }
-  return { kind: 'adaptive-review', reason: 'Placement confirmed the required techniques across both current units.' }
+  const firstUnconfirmed = ordered.find((unit) => !confirmed(unit.id))
+  if (firstUnconfirmed) return { kind: 'unit', unitId: firstUnconfirmed.id, reason: `Continue with ${firstUnconfirmed.title}, the earliest unit placement could not yet confirm.` }
+  return { kind: 'adaptive-review', reason: 'Placement confirmed the required techniques across all current units.' }
 }
 
 export function completePlacementRun(curriculum: Curriculum, learner: LearnerState, run: PlacementRun, now: number): PlacementRun {

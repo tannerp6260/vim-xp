@@ -51,7 +51,7 @@ export class VimEditorAdapter {
       selection: initial.selection ?? { anchor: initial.cursor }, extensions: [vim(), lineNumbers(), drawSelection(), highlightActiveLine(), history(), keymap.of([...defaultKeymap, ...historyKeymap]), this.editable.of(EditorView.editable.of(true)), emphasisField, ...language,
         EditorView.updateListener.of((update) => { if (update.docChanged || update.selectionSet) this.emit() })] }) })
     this.keyListener = (event) => { const token = normalizeKeyboardEvent(event); if (token) { this.trace.push(token); queueMicrotask(() => this.emit()) } }
-    this.view.contentDOM.addEventListener('keydown', this.keyListener, true)
+    this.view.dom.addEventListener('keydown', this.keyListener, true)
     getCM(this.view)?.on('vim-mode-change', this.modeListener)
   }
 
@@ -80,6 +80,6 @@ export class VimEditorAdapter {
       if (stepDelay && !await abortableDelay(stepDelay, signal)) return
     }
   }
-  destroy() { this.view.contentDOM.removeEventListener('keydown', this.keyListener, true); getCM(this.view)?.off('vim-mode-change', this.modeListener); this.listeners.clear(); this.view.destroy() }
+  destroy() { this.view.dom.removeEventListener('keydown', this.keyListener, true); getCM(this.view)?.off('vim-mode-change', this.modeListener); this.listeners.clear(); this.view.destroy() }
   private emit() { const state = this.snapshot(); this.listeners.forEach((listener) => listener(state)) }
 }

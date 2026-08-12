@@ -12,4 +12,6 @@ Domain logic must remain framework-independent. Exercise outcomes will be declar
 
 The engine gate promises fidelity only for taught behavior. If clean reset, observation, or central taught behavior requires extensive patches, reconsider the engine before product construction. Do not claim complete Vim/Neovim compatibility.
 
-Experienced users may optionally demonstrate a starting point in about five untimed editing tasks. Placement skips introductions only when recognized strategies confirm every required capability. Correct alternatives remain correct without invented technique credit. It seeds provisional Familiar evidence and recommends Unit 1, Unit 2, or mixed adaptive review; it never claims mastery.
+Experienced users may optionally demonstrate a starting point in about seven untimed editing tasks (eight only for the existing split Unit 1 confirmation). Placement skips introductions only when recognized strategies confirm every required capability. Correct alternatives remain correct without invented technique credit. It seeds provisional Familiar evidence and recommends the earliest unconfirmed unit, or mixed adaptive review when every current unit is confirmed; it never claims mastery.
+
+Units 3 and 4 add word motions, useful counts, dot repeat, forward search, continued matches with `n`, and compound search-and-repeat workflows. Each has ten exercises and a deliberate seven-task introduction. Reverse search (`?`), reverse-match `N`, `*`, and `#` remain outside the curriculum until their behavior is reliable in both browser projects.

@@ -58,3 +58,7 @@ Never reject a correct final outcome because its trace differs from a reference 
 ## Placement gates
 
 Every strategy declares `creditedConceptIds`; never infer concepts from its label or command. A gate declares a stable ID, owning unit, existing exercise, assessed concepts, accepted strategies, role, priority, and skip requirement. Validation rejects unknown references, wrong membership, duplicates, missing required unit gates, non-contiguous order, and unreachable confirmations. Later units should reuse catalog exercises, add a required gate, and ensure an accepted strategy explicitly credits every assessed concept.
+
+The four-unit catalog keeps placement bounded by adding one compound representative required gate for each of Units 3 and 4. Add future gates at a deterministic priority before optional confirmations, keep the total diagnostic short, and update the ordered recommendation tests. A gate confirms only its declared concepts; it is not a substitute for reference replays or varied adaptive exercises.
+
+Search commands are content only after representative real-adapter replays pass Chromium and Firefox. Curriculum 5 includes `/` and `n`; it intentionally omits `?`, `N`, `*`, and `#` because their behavior is not sufficiently reliable across both browser projects. Counts are separate tokens in references, and dot-repeat workflows must complete the first edit, return to Normal mode, move to the next target, then apply `.`.

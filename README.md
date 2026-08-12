@@ -1,8 +1,8 @@
 # Vim Fluency engine laboratory
 
-An early client-side Vim apprenticeship built on CodeMirror 6 + `@replit/codemirror-vim`. Fresh learners enter through `#/welcome`; experienced learners may take optional untimed placement at `#/placement`. `#/practice` provides focused sessions across two units: precise text-object edits and line-local targeting with `f`, `t`, `;`, `,`, change, and delete. `#/curriculum` shows both units without locking advanced learners out; the diagnostic laboratory remains at `#/lab`.
+An early client-side Vim apprenticeship built on CodeMirror 6 + `@replit/codemirror-vim`. Fresh learners enter through `#/welcome`; experienced learners may take optional untimed placement at `#/placement`. `#/practice` provides focused sessions across four units: precise text objects, line-local targeting, word movement and dot repeat, and search-driven edits. `#/curriculum` keeps every unit available without locking advanced learners out; the diagnostic laboratory remains at `#/lab`.
 
-Progress stays in versioned browser-local storage. Schema 4/curriculum 4.0.0 migrates compatible schema-2/curriculum-2.0.0 and schema-3/curriculum-3.0.0 progress without losing learner evidence or sessions. There are no accounts, backend, telemetry, runtime AI, timers, leaderboards, or broad Vim compatibility claims.
+Progress stays in versioned browser-local storage. Schema 5/curriculum 5.0.0 migrates compatible schema 2, 3, and 4 progress without losing valid learner evidence or sessions. A curriculum-4 placement is preserved but conservatively recommends Unit 3 because it never assessed the new units. There are no accounts, backend, telemetry, runtime AI, timers, leaderboards, or broad Vim compatibility claims.
 
 Hint 4 can open an explainable demonstration: step manually through each Vim idea, optionally autoplay it, inspect effects derived from real editor state, then reset and reproduce the edit.
 
