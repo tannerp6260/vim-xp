@@ -27,7 +27,7 @@ export function PracticeScreen() {
     const recommendation = recommendNext(curriculum, loaded.learner, loaded.placement)
     const genuinelyFresh = loaded.learner.attempts.length === 0 && !loaded.placement
     const focus = recommendation.kind === 'unit' ? recommendation.unitId : undefined
-    const session = planSession(curriculum, loaded.learner, { now: Date.now }, Date.now() >>> 0, genuinelyFresh, loaded.recentVariants, focus, Boolean(loaded.placement?.status === 'completed'))
+    const session = planSession(curriculum, loaded.learner, { now: Date.now }, Date.now() >>> 0, genuinelyFresh, loaded.recentVariants, focus, recommendation.kind === 'adaptive-review')
     return { ...loaded, session: { ...session, index: 0, completed: false } }
   })
   const session = progress.session!
